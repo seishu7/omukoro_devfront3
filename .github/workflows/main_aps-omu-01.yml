@@ -70,5 +70,5 @@ jobs:
         with:
           app-name: 'aps-OMU-01'
           slot-name: 'Production'
-          package: release.zip
+          package: './release.zip'
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_214062FBD7764A37B7369F0905B8AC19 }}
