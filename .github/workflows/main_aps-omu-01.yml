@@ -24,7 +24,7 @@ jobs:
           node-version: '20.x'
 
       - name: npm install, build, and test
-        env:
+        #env:
           #DATABASE_HOST: ${{ secrets.DATABASE_HOST }}
           #DATABASE_PORT: ${{ secrets.DATABASE_PORT }}
           #DATABASE_USER: ${{ secrets.DATABASE_USER }}
