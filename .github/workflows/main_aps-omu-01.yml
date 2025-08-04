@@ -35,7 +35,7 @@ jobs:
           BCRYPT_ROUNDS: ${{ secrets.BCRYPT_ROUNDS }}
           NEXT_TELEMETRY_DISABLED: 1
         run:  |
-          npm ci
+          npm install
           npm run build --if-present
           npm run test --if-present
 
