@@ -40,10 +40,12 @@ export function useRealtimeAnalysis() {
       setAnalysis(cacheRef.current.get(key) || null);
       return;
     }
+    // デバッグ用に追加
+    console.log('NEXT_PUBLIC_API_ENDPOINT:', process.env.NEXT_PUBLIC_API_ENDPOINT);
 
     setIsLoading(true);
     try {
-      const res = await fetch(process.env.NEXT_PUBLIC_API_ENDPOINT + '/api/analyze', {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_ENDPOINT}/api/analyze`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -96,7 +98,7 @@ export function useRealtimeAnalysis() {
       const form = new FormData();
       validFiles.forEach(f => form.append('files[]', f));
 
-      const res = await fetch(process.env.NEXT_PUBLIC_API_ENDPOINT + '/api/extract_text', {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_ENDPOINT}/api/extract_text`, {
         method: 'POST',
         headers: {
           ...getAuthHeader(),
