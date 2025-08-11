@@ -1,39 +1,36 @@
 'use client';
 
-<<<<<<< HEAD
+
 import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import OnigiriIcon from "@/components/LoginButton";
+import { useRouter } from 'next/navigation';
 
 export default function FigmaLoginForm() {
   const { login, isLoading } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-=======
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '@/contexts/AuthContext';
-import LoginForm from '@/components/LoginForm';
-import BeerLoadingAnimation from '@/components/BeerLoadingAnimation';
-
-export default function Home() {
-  const { isAuthenticated, isLoading, isInitialized } = useAuth();
   const router = useRouter();
-
-  // フックは常に同じ順序で呼ぶ
-  useEffect(() => {
-    if (isInitialized && isAuthenticated) {
-      router.replace('/consult/new');
-    }
-  }, [isInitialized, isAuthenticated, router]);
->>>>>>> team/main
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    await login?.(email, password);
+  
+    if (!login) {
+      console.error('Auth 未初期化');
+      return;
+    }
+  
+    try {
+      await login(email, password);
+      // 目的に合わせて片方を使ってください
+      // router.push('/consult');     
+      router.push('/consult/new');    // ← こちらが一般的な構成
+    } catch (err) {
+      console.error('ログイン失敗:', err);
+      // TODO: トーストやエラーメッセージ表示
+    }
   }
 
-<<<<<<< HEAD
   return (
     <div className="relative min-h-screen flex justify-center items-start
                 pt-[8vh] sm:pt-[10vh] md:pt-[12vh] lg:pt-[14vh] overflow-hidden">
@@ -100,20 +97,6 @@ export default function Home() {
         </form>
       </div>
     </div>
-=======
-  // ローディング中の表示
-  if (isLoading) {
-    return <BeerLoadingAnimation message="認証確認中..." subMessage="アカウント情報を確認しています" />;
-  }
-
-  // 未認証の場合はログインフォームを表示
-  if (!isAuthenticated) {
-    return <LoginForm />;
-  }
-
-  return (
-    <BeerLoadingAnimation message="画面遷移中..." subMessage="相談入力画面へ移動します" />
->>>>>>> team/main
   );
 }
   

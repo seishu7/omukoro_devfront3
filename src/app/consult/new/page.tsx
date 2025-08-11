@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+
 import { ConsultTextArea } from '@/components/ConsultTextArea';
 import { RealtimeProgressBar, type CompletenessLevel } from '@/components/RealtimeProgressBar';
 // import { SuggestionBadges } from '@/components/SuggestionBadges';
@@ -9,6 +9,9 @@ import { useRealtimeAnalysis } from '@/hooks/useRealtimeAnalysis';
 // import { ArrowRight } from 'lucide-react';
 import Bubble from '@/components/Bubble';
 import CompletenessIcon from '@/components/icons/CompletenessIcon';
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { saveConsultDraft, loadConsultDraft } from '@/components/ConsultDraft';
 
 export default function Page() {
   const [text, setText] = useState('');
@@ -16,6 +19,13 @@ export default function Page() {
   const level: CompletenessLevel = analysis?.completeness ?? 1;
   const suggestions = analysis?.suggestions ?? [];
   const showProgress = text.trim().length > 0 && !isLoading && !isFileUploading && !!analysis;
+  const router = useRouter();
+
+   useEffect(() => {
+       const d = loadConsultDraft();
+       if (d?.text) setText(d.text);
+     }, []);    
+
 
   // const categories = (() => {
   //   // ルールベース簡易推定：入力テキストに基づく不足カテゴリ推定
@@ -35,11 +45,13 @@ export default function Page() {
   //   return missing;
   // })();
 
-  const handleSubmit = () => {
-    // TODO: 次画面（論点・相談先表示）へ遷移 or /api/analytics 呼び出し
-    // ここではプレースホルダ
-    alert('送信しました（ダミー）');
-  };
+  const handleSubmit = async () => {
+       if (!text.trim()) return;
+       // TODO: API実装後はここでPOSTし、戻り値のidを使う
+       saveConsultDraft(text);
+       const id = Date.now().toString(); // 仮ID
+       router.push(`/consult/summary`);
+     };
 
   const isSubmitDisabled = !text.trim() || isLoading || isFileUploading;
   const bubbleColor = (() => {
