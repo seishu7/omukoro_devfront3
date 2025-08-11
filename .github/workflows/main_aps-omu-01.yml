@@ -33,7 +33,12 @@ jobs:
           DATABASE_SSL: ${{ secrets.DATABASE_SSL }}
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
           BCRYPT_ROUNDS: ${{ secrets.BCRYPT_ROUNDS }}
+<<<<<<< HEAD
           
+=======
+          NEXT_PUBLIC_API_ENDPOINT: ${{ secrets.NEXT_PUBLIC_API_ENDPOINT }}
+          #NEXT_TELEMETRY_DISABLED: 1
+>>>>>>> team/main
         run:  |
           npm install
           npm run build --if-present

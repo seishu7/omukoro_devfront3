@@ -43,7 +43,7 @@ export function useRealtimeAnalysis() {
 
     setIsLoading(true);
     try {
-      const res = await fetch(process.env.NEXT_PUBLIC_API_ENDPOINT + '/api/analyze', {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_ENDPOINT}/api/analyze`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -96,7 +96,7 @@ export function useRealtimeAnalysis() {
       const form = new FormData();
       validFiles.forEach(f => form.append('files[]', f));
 
-      const res = await fetch(process.env.NEXT_PUBLIC_API_ENDPOINT + '/api/extract_text', {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_ENDPOINT}/api/extract_text`, {
         method: 'POST',
         headers: {
           ...getAuthHeader(),
