@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { AuthProvider } from "@/contexts/AuthContext";
+import AppHeader from "@/components/AppHeader";
 
 // 追加：Google Fonts
 import { Dela_Gothic_One, Noto_Sans_JP } from "next/font/google";
@@ -17,15 +18,18 @@ const noto = Noto_Sans_JP({
 });
 
 export const metadata: Metadata = {
-  title: "Sharpath",
+  title: "Sherpath",
+  description: "どんな論点を、どこに相談すべきかの道筋を案内し、適切な相談先に繋げることを目的とするアプリです。",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="ja">
-      {/* 本文はNoto、フォント変数を全体に付与 */}
-      <body className={`${noto.className} ${noto.variable} ${dela.variable}`}>
-        <AuthProvider>{children}</AuthProvider>
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+        <AuthProvider>
+          <AppHeader />
+          {children}
+        </AuthProvider>
       </body>
     </html>
   );

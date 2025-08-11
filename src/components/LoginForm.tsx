@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import BeerLoadingAnimation from '@/components/BeerLoadingAnimation';
+// import BeerLoadingAnimation from '@/components/BeerLoadingAnimation';
 import { Mail, Lock, Shield } from 'lucide-react';
 
 interface FormData {
@@ -82,7 +82,7 @@ export default function LoginForm() {
 
     try {
       await login(formData.email, formData.password);
-    } catch (error) {
+    } catch {
       // セキュリティ上の理由で一般的なエラーメッセージを表示
       setErrors({
         general: 'メールアドレス・パスワードのどちらかが間違っています',

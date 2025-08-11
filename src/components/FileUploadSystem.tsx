@@ -101,7 +101,7 @@ const FileUploadSystem: React.FC<FileUploadSystemProps> = ({ className = '' }) =
 
     setFiles(prev => [...prev, ...newFileItems]);
     setErrors([]);
-  }, [files]);
+  }, [files, validateFile]);
 
   const removeFile = useCallback((id: string) => {
     setFiles(prev => prev.filter(item => item.id !== id));

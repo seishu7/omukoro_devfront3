@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
     let payload: JWTPayload;
     try {
       payload = verifyToken(token);
-    } catch (tokenError) {
+    } catch {
       // トークンが無効でもログアウト操作は成功とみなす
       return NextResponse.json<ApiResponse>({
         success: true,

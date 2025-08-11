@@ -2,7 +2,8 @@
 @import url('https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Noto+Sans+JP:wght@400;700&display=swap');
 
 :root {
-  --background: #ffffff;
+  /* 背景色を統一 */
+  --background: #414141;
   --foreground: #171717;
 }
 
@@ -13,12 +14,13 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
+/* ダークモードでも背景色を固定（#414141）にするため無効化 */
+/* @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
+    --background: #414141;
     --foreground: #ededed;
   }
-}
+} */
 
 body {
   background: var(--background);

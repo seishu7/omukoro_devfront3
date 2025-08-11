@@ -46,7 +46,7 @@ export interface ApiResponse<T = unknown> {
 export function formatValidationError(error: z.ZodError): string[] {
   try {
     return error.issues?.map(issue => issue.message) || ['バリデーションエラーが発生しました'];
-  } catch (e) {
+  } catch {
     return ['バリデーションエラーが発生しました'];
   }
 }
