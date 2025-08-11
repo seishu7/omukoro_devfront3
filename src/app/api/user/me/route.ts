@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
     let payload: JWTPayload;
     try {
       payload = verifyToken(token);
-    } catch (tokenError) {
+    } catch {
       return NextResponse.json<ApiResponse>({
         success: false,
         error: {

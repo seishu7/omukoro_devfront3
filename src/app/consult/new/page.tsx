@@ -2,41 +2,38 @@
 
 import { useState } from 'react';
 import { ConsultTextArea } from '@/components/ConsultTextArea';
-import { RealtimeProgressBar } from '@/components/RealtimeProgressBar';
+import { RealtimeProgressBar, type CompletenessLevel } from '@/components/RealtimeProgressBar';
 // import { SuggestionBadges } from '@/components/SuggestionBadges';
 import { SuggestionList } from '@/components/SuggestionList';
 import { useRealtimeAnalysis } from '@/hooks/useRealtimeAnalysis';
-import { ArrowRight } from 'lucide-react';
+// import { ArrowRight } from 'lucide-react';
 import Bubble from '@/components/Bubble';
 import CompletenessIcon from '@/components/icons/CompletenessIcon';
 
 export default function Page() {
   const [text, setText] = useState('');
   const { analysis, isLoading, analyzeInput, handleFileUpload, isFileUploading } = useRealtimeAnalysis();
-  const level = analysis?.completeness ?? 1;
+  const level: CompletenessLevel = analysis?.completeness ?? 1;
   const suggestions = analysis?.suggestions ?? [];
   const showProgress = text.trim().length > 0 && !isLoading && !isFileUploading && !!analysis;
 
-  const categories = (() => {
-    // ルールベース簡易推定：入力テキストに基づく不足カテゴリ推定
-    const defs: { label: string; patterns: RegExp[] }[] = [
-      { label: '商品/サービス', patterns: [/商品|サービス|企画|施策|プロダクト/] },
-      { label: 'ターゲット顧客', patterns: [/ターゲット|顧客|対象|ユーザー|ペルソナ/] },
-      { label: 'スケジュール・時期', patterns: [/スケジュール|時期|期日|日程|月|週|いつ|開始|終了/] },
-      { label: '目的・目標', patterns: [/目的|目標|KPI|ゴール|狙い|意図/] },
-    ];
-    const textLower = (text || '').toLowerCase();
-
-    const missing: string[] = [];
-    defs.forEach((d) => {
-      const hit = d.patterns.some((p) => p.test(textLower));
-      if (!hit) missing.push(d.label);
-    });
-
-    // 段階別表示制御（1-2: 必須強調 / 3: 不足のみ / 4-5: 非表示）
-    if (level >= 4) return [];
-    return missing;
-  })();
+  // const categories = (() => {
+  //   // ルールベース簡易推定：入力テキストに基づく不足カテゴリ推定
+  //   const defs: { label: string; patterns: RegExp[] }[] = [
+  //     { label: '商品/サービス', patterns: [/商品|サービス|企画|施策|プロダクト/] },
+  //     { label: 'ターゲット顧客', patterns: [/ターゲット|顧客|対象|ユーザー|ペルソナ/] },
+  //     { label: 'スケジュール・時期', patterns: [/スケジュール|時期|期日|日程|月|週|いつ|開始|終了/] },
+  //     { label: '目的・目標', patterns: [/目的|目標|KPI|ゴール|狙い|意図/] },
+  //   ];
+  //   const textLower = (text || '').toLowerCase();
+  //   const missing: string[] = [];
+  //   defs.forEach((d) => {
+  //     const hit = d.patterns.some((p) => p.test(textLower));
+  //     if (!hit) missing.push(d.label);
+  //   });
+  //   if (level >= 4) return [];
+  //   return missing;
+  // })();
 
   const handleSubmit = () => {
     // TODO: 次画面（論点・相談先表示）へ遷移 or /api/analytics 呼び出し
@@ -86,7 +83,7 @@ export default function Page() {
             <div className="absolute -top-18 z-10">
               <Bubble color={bubbleColor} tailSide="bottom" tailOffsetClass="left-8">
                 <div className="w-44 text-white">
-                  <RealtimeProgressBar level={level as any} withLabel className="flex-col items-center gap-1" />
+                  <RealtimeProgressBar level={level} withLabel className="flex-col items-center gap-1" />
                 </div>
               </Bubble>
             </div>

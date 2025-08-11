@@ -56,14 +56,17 @@ export function useRealtimeAnalysis() {
 
       // 正規化: サーバ実装差異に備えて型を整える
       const normalized: AnalyzeResult = {
-        completeness: Math.min(5, Math.max(1, Math.round((data as any).completeness))) as 1 | 2 | 3 | 4 | 5,
+        completeness: Math.min(
+          5,
+          Math.max(1, Math.round(Number(data.completeness)))
+        ) as 1 | 2 | 3 | 4 | 5,
         suggestions: Array.isArray(data.suggestions) ? data.suggestions : [],
         confidence: typeof data.confidence === 'number' ? data.confidence : undefined,
       };
 
       cacheRef.current.set(key, normalized);
       setAnalysis(normalized);
-    } catch (e) {
+    } catch {
       // フォールバック: 最低限のレスポンス
       setAnalysis({ completeness: 1, suggestions: ['入力が少ない可能性があります。'], confidence: 0.0 });
     } finally {
@@ -111,7 +114,7 @@ export function useRealtimeAnalysis() {
 
       // 抽出完了後に再評価（デバウンスせず即時）
       await analyzeNow(inputText, data.extractedText || '');
-    } catch (e) {
+    } catch {
       // 失敗時はdocTextを維持（テキストのみで継続）
     } finally {
       setIsFileUploading(false);

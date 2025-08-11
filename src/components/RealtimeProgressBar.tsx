@@ -48,7 +48,7 @@ export function RealtimeProgressBar({ level, className = '', withLabel = true, l
       ))}
       </div>
       {withLabel && (
-        <span className="text-white text-sm font-bold" aria-Live="polite">
+        <span className="text-white text-sm font-bold" aria-live="polite">
           {labelText}
         </span>
       )}

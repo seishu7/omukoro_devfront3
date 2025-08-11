@@ -30,10 +30,11 @@ export default function CompletenessIcon({
   const C = { x: 24, y: 22 };
   const r = Math.max(0, Math.min(cornerRadius, 4)); // 過度な丸み防止
 
-  const sub = (p: any, q: any) => ({ x: p.x - q.x, y: p.y - q.y });
-  const len = (v: any) => Math.hypot(v.x, v.y);
-  const unit = (v: any) => { const l = len(v); return { x: v.x / l, y: v.y / l }; };
-  const off = (p: any, dir: any, d: number) => { const u = unit(dir); return { x: p.x + u.x * d, y: p.y + u.y * d }; };
+  type Point = { x: number; y: number };
+  const sub = (p: Point, q: Point): Point => ({ x: p.x - q.x, y: p.y - q.y });
+  const len = (v: Point): number => Math.hypot(v.x, v.y);
+  const unit = (v: Point): Point => { const l = len(v); return { x: v.x / l, y: v.y / l }; };
+  const off = (p: Point, dir: Point, d: number): Point => { const u = unit(dir); return { x: p.x + u.x * d, y: p.y + u.y * d }; };
 
   // エッジ単位ベクトル
   const uAB = unit(sub(B, A)); const uBA = unit(sub(A, B));
@@ -45,11 +46,11 @@ export default function CompletenessIcon({
   const B1 = off(B, uBA, r), B2 = off(B, uBC, r);
   const C1 = off(C, uCB, r), C2 = off(C, uCA, r);
  
-  // 角丸三角形パス（Qで各頂点をフィレット）
-  const roundedPath =
-    `M ${A1.x},${A1.y} L ${B1.x},${B1.y} Q ${B.x},${B.y} ${B2.x},${B2.y} ` +
-    `L ${C1.x},${C1.y} Q ${C.x},${C.y} ${C2.x},${C2.y} ` +
-    `L ${A2.x},${A2.y} Q ${A.x},${A.y} ${A1.x},${A1.y} Z`;
+  // 角丸三角形パス（必要に応じて使用）
+  // const roundedPath =
+  //   `M ${A1.x},${A1.y} L ${B1.x},${B1.y} Q ${B.x},${B.y} ${B2.x},${B2.y} ` +
+  //   `L ${C1.x},${C1.y} Q ${C.x},${C.y} ${C2.x},${C2.y} ` +
+  //   `L ${A2.x},${A2.y} Q ${A.x},${A.y} ${A1.x},${A1.y} Z`;
  
   return (
     <svg

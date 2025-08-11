@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { z } from 'zod';
+// import { z } from 'zod';
 import { getConnection, User } from '@/lib/database';
 import { verifyPassword } from '@/lib/password';
 import { generateToken } from '@/lib/jwt';

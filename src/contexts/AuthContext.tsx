@@ -30,6 +30,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // 初期化時にローカルストレージからトークンを確認
   useEffect(() => {
     const initializeAuth = async () => {
+      setIsLoading(true);
       // キャッシュされたユーザー情報を復元
       const cachedUser = localStorage.getItem('cached_user');
       if (cachedUser) {
@@ -74,6 +75,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       
       setIsInitialized(true);
+      setIsLoading(false);
     };
 
     initializeAuth();
@@ -81,6 +83,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = async (email: string, password: string) => {
     try {
+      setIsLoading(true);
       const response = await fetch('/api/login', {
         method: 'POST',
         headers: {
@@ -114,11 +117,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     } catch (error) {
       throw error;
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const logout = async () => {
     try {
+      setIsLoading(true);
       const token = localStorage.getItem('access_token');
       
       if (token) {
@@ -135,6 +141,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       localStorage.removeItem('access_token');
       localStorage.removeItem('cached_user');
       setUser(null);
+      setIsLoading(false);
     }
   };
 
