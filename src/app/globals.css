@@ -1,7 +1,8 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
+  /* 背景色を統一 */
+  --background: #414141;
   --foreground: #171717;
 }
 
@@ -12,12 +13,13 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
+/* ダークモードでも背景色を固定（#414141）にするため無効化 */
+/* @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
+    --background: #414141;
     --foreground: #ededed;
   }
-}
+} */
 
 body {
   background: var(--background);
