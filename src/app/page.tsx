@@ -1,70 +1,85 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import LoginForm from '@/components/LoginForm';
-import FileUploadSystem from '@/components/FileUploadSystem';
-import BeerLoadingAnimation from '@/components/BeerLoadingAnimation';
+import OnigiriIcon from "@/components/LoginButton";
 
-export default function Home() {
-  const { isAuthenticated, isLoading, user, logout, isInitialized } = useAuth();
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
+export default function FigmaLoginForm() {
+  const { login, isLoading } = useAuth();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
 
-  // 初期化中は何も表示しない（Hydrationエラー回避）
-  if (!isInitialized) {
-    return null;
+  async function onSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    await login?.(email, password);
   }
 
-  // ローディング中の表示
-  if (isLoading) {
-    return <BeerLoadingAnimation message="認証確認中..." subMessage="アカウント情報を確認しています" />;
-  }
-
-  // 未認証の場合はログインフォームを表示
-  if (!isAuthenticated) {
-    return <LoginForm />;
-  }
-
-  // 認証済みの場合はメインアプリケーションを表示
   return (
-    <div className="min-h-screen bg-gray-100">
-      {/* ヘッダー */}
-      <header className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div>
-              <h1 className="text-xl font-semibold text-gray-900">
-                酒税法リスク分析判定システム
-              </h1>
-            </div>
-            <div className="flex items-center space-x-4">
-              <span className="text-sm text-gray-700">
-                {user?.email} ({user?.role === 'admin' ? '管理者' : 'ユーザー'})
-              </span>
-              <button
-                onClick={async () => {
-                  setIsLoggingOut(true);
-                  await logout();
-                  setIsLoggingOut(false);
-                }}
-                disabled={isLoggingOut}
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                  isLoggingOut
-                    ? 'bg-[#5A5552] cursor-not-allowed text-white'
-                    : 'bg-[#B34700] hover:bg-[#FB8F44] text-white'
-                }`}
-              >
-                {isLoggingOut ? 'ログアウト中...' : 'ログアウト'}
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
+    <div className="relative min-h-screen flex justify-center items-start
+                pt-[8vh] sm:pt-[10vh] md:pt-[12vh] lg:pt-[14vh] overflow-hidden">
+         {/* 背景レイヤー（ドット＋#414141） */}
+    <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 -z-10 bg-[#414141]
+               [background-image:radial-gradient(rgba(255,255,255,.12)_1.2px,transparent_1.2px)]
+               [background-size:22px_22px]"/>
+      <div className="w-full max-w-md sm:max-w-lg px-6">
+        {/* タイトル：Dela Gothic One */}
+        <h1
+          className="text-white text-center tracking-wide text-[28px] sm:text-[32px] mb-10
+                     [font-family:var(--font-dela)]"
+        >
+          Sherpath
+        </h1>
 
-      {/* メインコンテンツ */}
-      <main>
-        <FileUploadSystem />
-      </main>
+        <form onSubmit={onSubmit} className="space-y-6">
+          <div>
+            <label className="block text-[11px] text-white/85 mb-1">
+              メールアドレス
+            </label>
+            <input
+              type="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="block w-full h-9 rounded-lg bg-white text-gray-900 px-3 shadow-sm
+                         outline-none focus:ring-2 focus:ring-white/70"
+              placeholder="you@example.com"
+            />
+          </div>
+
+          <div>
+            <label className="block text-[11px] text-white/85 mb-1">
+              パスワード
+            </label>
+            <input
+              type="password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="block w-full h-9 rounded-lg bg-white text-gray-900 px-3 shadow-sm
+                         outline-none focus:ring-2 focus:ring-white/70"
+              placeholder="••••••••"
+            />
+          </div>
+
+          {/* ピル型ボタン（中央寄せ） */}
+          <button
+  type="submit"
+  disabled={isLoading}
+  className="mx-auto flex items-center justify-center gap-3 rounded-lg
+             bg-white px-5 py-2 shadow-sm hover:shadow active:opacity-95
+             disabled:opacity-60 border border-black/10
+             w-full sm:w-auto"
+>
+  <OnigiriIcon className="inline-flex h-[22px] w-[28px] items-center justify-center" />
+  <span className="text-[15px] font-bold text-[rgba(39,39,39,0.9)]">
+    {isLoading ? 'ログイン中…' : 'ログイン'}
+  </span>
+</button>
+        </form>
+      </div>
     </div>
   );
 }
+  

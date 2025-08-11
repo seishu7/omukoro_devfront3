@@ -1,36 +1,31 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/contexts/AuthContext";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+// 追加：Google Fonts
+import { Dela_Gothic_One, Noto_Sans_JP } from "next/font/google";
+
+const dela = Dela_Gothic_One({
+  weight: "400",
   subsets: ["latin"],
+  variable: "--font-dela",
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const noto = Noto_Sans_JP({
   subsets: ["latin"],
+  variable: "--font-noto",
 });
 
 export const metadata: Metadata = {
-  title: "酒税法リスク分析判定システム",
-  description: "酒税法リスク分析判定システムは酒税法に関するリスクを分析し、判定するシステムです。",
+  title: "Sharpath",
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="ja">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        <AuthProvider>
-          {children}
-        </AuthProvider>
+      {/* 本文はNoto、フォント変数を全体に付与 */}
+      <body className={`${noto.className} ${noto.variable} ${dela.variable}`}>
+        <AuthProvider>{children}</AuthProvider>
       </body>
     </html>
   );

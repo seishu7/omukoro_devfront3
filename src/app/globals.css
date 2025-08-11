@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Noto+Sans+JP:wght@400;700&display=swap');
 
 :root {
   --background: #ffffff;
@@ -38,3 +39,212 @@ body {
 .beer-fill-animation {
   animation: beer-fill 3s ease-in-out infinite;
 }
+
+/* Figma Login Styles */
+.figma-login-container {
+  width: 1440px;
+  height: 904px;
+  flex-shrink: 0;
+  background: #414141;
+  position: relative;
+}
+
+.figma-login-body {
+  display: flex;
+  width: 1440px;
+  height: 904px;
+  padding: 48px 0;
+  flex-direction: column;
+  align-items: center;
+  gap: 48px;
+  flex-shrink: 0;
+  position: absolute;
+  left: 0px;
+  top: 0px;
+}
+
+.figma-login-title {
+  color: #FFF;
+  font-family: 'Dela Gothic One', -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 28px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  letter-spacing: 0.25px;
+  position: relative;
+  margin: 0;
+}
+
+.figma-login-form {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 48px;
+}
+
+.figma-form-field {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: flex-start;
+  gap: 4px;
+  position: relative;
+}
+
+.figma-field-label {
+  color: #FFF;
+  font-family: 'Noto Sans JP', -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 700;
+  line-height: normal;
+  letter-spacing: 0.25px;
+  position: relative;
+  margin: 0;
+}
+
+.figma-field-input {
+  width: 355px;
+  height: 36px;
+  border-radius: 8px;
+  background: #FFF;
+  border: none;
+  padding: 0 12px;
+  font-family: 'Noto Sans JP', -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 14px;
+  outline: none;
+}
+
+.figma-field-input:focus {
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.3);
+}
+
+.figma-field-input:disabled {
+  background: #f5f5f5;
+  cursor: not-allowed;
+}
+
+.figma-error-message {
+  color: #ff6b6b;
+  font-family: 'Noto Sans JP', -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 11px;
+  margin: 2px 0 0 0;
+}
+
+.figma-general-error {
+  color: #ff6b6b;
+  font-family: 'Noto Sans JP', -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 12px;
+  background: rgba(255, 107, 107, 0.1);
+  border: 1px solid rgba(255, 107, 107, 0.3);
+  border-radius: 8px;
+  padding: 8px 12px;
+  width: 355px;
+  text-align: center;
+}
+
+.figma-login-button {
+  display: flex;
+  padding: 12px 24px 12px 20px;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  border-radius: 8px;
+  background: #FFF;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.figma-login-button:hover:not(:disabled) {
+  background: #f8f8f8;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.figma-login-button:disabled {
+  background: #e0e0e0;
+  cursor: not-allowed;
+}
+
+.figma-button-icon {
+  width: 24px;
+  height: 22px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.figma-icon-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #D9D9D9;
+}
+
+.figma-button-text {
+  color: rgba(39, 39, 39, 0.90);
+  font-family: 'Noto Sans JP', -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 16px;
+  font-style: normal;
+  font-weight: 700;
+  line-height: 100%;
+  letter-spacing: 0.25px;
+}
+
+.figma-login-button:disabled .figma-button-text {
+  color: rgba(39, 39, 39, 0.5);
+}
+
+.bg-dot-pattern {
+  background-color: #414141; /* 背景色 */
+  background-image: radial-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+  background-size: 20px 20px; /* ドット間隔 */
+}
+
+
+@media (max-width: 1440px) {
+  .figma-login-container {
+    width: 100vw;
+    height: 100vh;
+    min-height: 904px;
+  }
+
+  .figma-login-body {
+    width: 100%;
+    height: 100%;
+    min-height: 904px;
+  }
+}
+
+@media (max-width: 768px) {
+  .figma-login-body {
+    padding: 24px 16px;
+    gap: 32px;
+  }
+
+  .figma-login-title {
+    font-size: 24px;
+  }
+
+  .figma-field-input,
+  .figma-general-error {
+    width: 300px;
+  }
+
+  .figma-login-form {
+    gap: 32px;
+  }
+}
+
+@media (max-width: 375px) {
+  .figma-field-input,
+  .figma-general-error {
+    width: 280px;
+  }
+
+  .figma-login-title {
+    font-size: 20px;
+  }
+}
+
