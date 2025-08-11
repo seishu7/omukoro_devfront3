@@ -40,8 +40,6 @@ export function useRealtimeAnalysis() {
       setAnalysis(cacheRef.current.get(key) || null);
       return;
     }
-    // デバッグ用に追加
-    console.log('NEXT_PUBLIC_API_ENDPOINT:', process.env.NEXT_PUBLIC_API_ENDPOINT);
 
     setIsLoading(true);
     try {
