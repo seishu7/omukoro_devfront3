@@ -55,6 +55,11 @@ export default function Page() {
 
   return (
     <div className="mx-auto max-w-[1000px] px-4 py-12 space-y-10 my-10">
+      {/* ▼▼▼ デバッグ用コード：このブロックを追加 ▼▼▼ */}
+      <div style={{ position: 'fixed', top: 0, left: 0, background: 'white', color: 'red', padding: '10px', zIndex: 9999, border: '2px solid red' }}>
+        <strong>[Debug] API Endpoint:</strong> {process.env.NEXT_PUBLIC_API_ENDPOINT || "【環境変数が設定されていません】"}
+      </div>
+      {/* ▲▲▲ デバッグ用コード：ここまで ▲▲▲ */}
       <h1 className="text-center text-white text-3xl font-bold mb-30">何を相談したいですか？</h1>
 
       {/* 入力カード（吹き出しはカード外・左下に表示） */}
