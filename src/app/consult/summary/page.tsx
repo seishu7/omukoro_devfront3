@@ -10,15 +10,8 @@ export default function SummaryPage() {
   const question = draft?.text ?? '（直前の相談文を取得できませんでした）';
 
   return (
-    <div className="min-h-screen bg-[#414141] relative">
-      {/* 背景ドット */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 -z-10 bg-[#414141]
-                   [background-image:radial-gradient(rgba(255,255,255,.12)_1.2px,transparent_1.2px)]
-                   [background-size:22px_22px]"
-      />
-
+    <div className="relative min-h-screen">
+      {/* ← consult/layout.tsx で全画面ドット背景を敷いているので、ここでの背景指定は不要 */}
       <div className="mx-auto max-w-5xl px-4 py-6 sm:py-10">
         {/* トップ中央の小アイコン群（飾り） */}
         <div className="flex items-center justify-center gap-6 mb-6">

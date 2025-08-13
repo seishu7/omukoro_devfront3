@@ -250,3 +250,84 @@ body {
   }
 }
 
+/* ラッパーはそのまま */
+.onigiri-arc-wrap {
+  position: relative;
+  width: 140px;
+  height: 110px;
+}
+
+/* ① mover: 半円軌道の移動だけ担当（offset-* はここにだけ付ける） */
+.onigiri-mover {
+  width: 56px;
+  height: 50px;
+  offset-path: path("M0,56 A56,56 0 0 1 112,56");
+  -webkit-offset-path: path("M0,56 A56,56 0 0 1 112,56");
+  offset-distance: 0%;
+  -webkit-offset-distance: 0%;
+  offset-rotate: 0deg;            /* 回転は rotor に任せるので 0 固定 */
+  -webkit-offset-rotate: 0deg;
+  animation: mover-arc 1.4s ease-in-out infinite;
+  will-change: offset-distance;
+}
+
+/* ② rotor: 画像自体に回転＋スカッシュ */
+.onigiri-rotor {
+  width: 100%;
+  height: 100%;
+  display: block;
+  transform-origin: 50% 85%;      /* 下寄りで“潰れ”が強調される */
+  animation: rotor-spin 1.4s ease-in-out infinite;
+  will-change: transform;
+}
+
+/* 影は流用OK */
+.onigiri-shadow {
+  position: absolute;
+  left: 0; right: 0; bottom: 8px;
+  margin: auto;
+  width: 80px; height: 10px;
+  background: radial-gradient(ellipse, rgba(0,0,0,.35), transparent 70%);
+  filter: blur(2px);
+  animation: shadow-squash 1.4s ease-in-out infinite;
+}
+
+/* 軌道：オフセット距離だけを進める */
+@keyframes mover-arc {
+  0%   { offset-distance: 0%;   -webkit-offset-distance: 0%; }
+  50%  { offset-distance: 50%;  -webkit-offset-distance: 50%; }
+  100% { offset-distance: 100%; -webkit-offset-distance: 100%; }
+}
+
+/* 回転＋スカッシュ：ここで確実に回す */
+@keyframes rotor-spin {
+  0%   { transform: rotate(0deg); }
+  50%  { transform: rotate(180deg); }
+  100% { transform: rotate(360deg); }
+}
+
+
+/* 影の伸縮（浮くと小さく、着地で広がる） */
+@keyframes shadow-squash {
+  0%,100% { transform: scaleX(1);   opacity: .38; }
+  50%     { transform: scaleX(.55); opacity: .15; }
+}
+
+/* フォールバック（motion-path 非対応） */
+@supports not (offset-path: path("M0,0 L1,1")) {
+  .onigiri-mover { animation: none; } /* mover は無効化 */
+  .onigiri-rotor {
+    animation: rotor-fallback 1.4s ease-in-out infinite;
+  }
+  @keyframes rotor-fallback {
+    0%   { transform: translateX(0)    translateY(0)    rotate(0deg)    scale(1,1); }
+    6%   { transform: translateX(6%)   translateY(-8%)  rotate(20deg)   scale(1.18,0.86); }
+    50%  { transform: translateX(56%)  translateY(-60%) rotate(180deg)  scale(1,1); }
+    94%  { transform: translateX(106%) translateY(-8%)  rotate(340deg)  scale(1.18,0.86); }
+    100% { transform: translateX(112%) translateY(0)    rotate(360deg)  scale(1,1); }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .onigiri-mover, .onigiri-rotor, .onigiri-shadow { animation: none; }
+}

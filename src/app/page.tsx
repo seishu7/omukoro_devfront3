@@ -1,9 +1,7 @@
 'use client';
 
-
 import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import OnigiriIcon from "@/components/LoginButton";
 import { useRouter } from 'next/navigation';
 
 export default function FigmaLoginForm() {
@@ -14,34 +12,32 @@ export default function FigmaLoginForm() {
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-  
+
     if (!login) {
       console.error('Auth 未初期化');
       return;
     }
-  
+
     try {
       await login(email, password);
-      // 目的に合わせて片方を使ってください
-      // router.push('/consult');     
-      router.push('/consult/new');    // ← こちらが一般的な構成
+      router.push('/consult/new');
     } catch (err) {
       console.error('ログイン失敗:', err);
-      // TODO: トーストやエラーメッセージ表示
     }
   }
 
   return (
     <div className="relative min-h-screen flex justify-center items-start
                 pt-[8vh] sm:pt-[10vh] md:pt-[12vh] lg:pt-[14vh] overflow-hidden">
-         {/* 背景レイヤー（ドット＋#414141） */}
-    <div
+      {/* 背景レイヤー */}
+      <div
         aria-hidden
         className="pointer-events-none absolute inset-0 -z-10 bg-[#414141]
                [background-image:radial-gradient(rgba(255,255,255,.12)_1.2px,transparent_1.2px)]
-               [background-size:22px_22px]"/>
+               [background-size:22px_22px]"
+      />
       <div className="w-full max-w-md sm:max-w-lg px-6">
-        {/* タイトル：Dela Gothic One */}
+        {/* タイトル */}
         <h1
           className="text-white text-center tracking-wide text-[28px] sm:text-[32px] mb-10
                      [font-family:var(--font-dela)]"
@@ -80,23 +76,25 @@ export default function FigmaLoginForm() {
             />
           </div>
 
-          {/* ピル型ボタン（中央寄せ） */}
+          {/* ピル型ボタン */}
+          {/* SVGそのものをボタンにする */}
           <button
-  type="submit"
-  disabled={isLoading}
-  className="mx-auto flex items-center justify-center gap-3 rounded-lg
-             bg-white px-5 py-2 shadow-sm hover:shadow active:opacity-95
-             disabled:opacity-60 border border-black/10
-             w-full sm:w-auto"
->
-  <OnigiriIcon className="inline-flex h-[22px] w-[28px] items-center justify-center" />
-  <span className="text-[15px] font-bold text-[rgba(39,39,39,0.9)]">
-    {isLoading ? 'ログイン中…' : 'ログイン'}
-  </span>
-</button>
+            type="submit"
+            disabled={isLoading}
+            aria-label={isLoading ? 'ログイン中…' : 'ログイン'}
+            className="mx-auto block p-0 bg-transparent border-0
+                      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70
+                      active:opacity-95 disabled:opacity-60"
+          >
+            <img
+              src="/LoginButton.svg"
+              alt=""            // 役割は aria-label で伝えるので空に
+              className="h-[40px] w-auto select-none pointer-events-none"
+            />
+          </button>
+
         </form>
       </div>
     </div>
   );
 }
-  
