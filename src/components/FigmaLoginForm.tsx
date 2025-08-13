@@ -135,15 +135,20 @@ export default function FigmaLoginForm() {
 
           <button
             type="submit"
-            disabled={isSubmitting || isLoading || !isFormValid}
-            className="figma-login-button"
+            disabled={isLoading}
+            aria-label={isLoading ? 'ログイン中…' : 'ログイン'}
+            className="mx-auto block border-0 bg-transparent p-0 hover:opacity-90 active:opacity-80 disabled:opacity-60"
+            style={{ lineHeight: 0 }}
           >
-            <div className="figma-button-icon">
-              <div className="figma-icon-dot"></div>
-            </div>
-            <span className="figma-button-text">
-              {isSubmitting ? 'ログイン中...' : 'ログイン'}
-            </span>
+            {/* ※ public 直下のファイルは先頭スラッシュで参照。/public は付けない */}
+            <img
+              src="/LoginButton.svg"
+              alt=""
+              width={180}   // ← お好みで調整（Figmaの実寸に合わせる）
+              height={60}
+              className="select-none pointer-events-none"
+              draggable={false}
+            />
           </button>
         </form>
       </div>
