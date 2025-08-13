@@ -22,7 +22,7 @@ export default function Bubble({
   return (
     <div className={className}>
       <div
-        className="relative rounded-full px-4 py-2 shadow-md ring-1 ring-black/10"
+        className="relative rounded-[40px_40px_0_40px] px-4 py-2 shadow-md ring-1 ring-black/10" // 角丸の大きさを調整
         style={{ backgroundColor: color }}
       >
         {children}

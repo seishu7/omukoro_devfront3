@@ -19,10 +19,14 @@ export default function AppHeader() {
           className={`text-lg font-bold tracking-wider ${
             isConsult ? 'text-white' : 'text-white/80 hover:text-white'
           }`}
-        >
-          質問
+        > 
+          {/* 修正: 「質問」の文字上にアイコンを表示 */}
+          <img src="/omusubi3.svg" alt="質問" width={20} height={20} className="ml-2"/> 
+          質問 
         </Link>
         <span className="text-lg font-bold tracking-wider text-white/50 cursor-not-allowed select-none">
+          {/* 修正: 「検索」の文字上にアイコンを表示 */}
+          <img src="/omusubi2.svg" alt="検索" width={20} height={20} className="ml-2"/>
           検索
         </span>
       </nav>

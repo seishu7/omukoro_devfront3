@@ -116,7 +116,7 @@ export default function Page() {
             {/* 提案のみ：ConsultTextArea 左下（入力カード外） */}
             {suggestions.length > 0 && (
               <div
-                className="absolute left-6 z-10 max-w-[25vw]"
+                className="absolute left-6 z-10 max-w-[50vw]" //表示幅を調整
                 style={{ top: 'calc(100% + 8px)' }}
               >
                 <Bubble color={bubbleColor} tailSide="top" tailOffsetClass="left-8">
@@ -142,13 +142,9 @@ export default function Page() {
           color: '#272727',
         }}
       >
-          <CompletenessIcon
-            active
+          <CompletenessIcon  // 修正: 送信ボタンのアイコン
             color="#000000"
-            background="transparent"
-            width={20}
-            height={18}
-            ariaLabel="送信"
+            size={20}
             className="shrink-0"
           />
           送信
