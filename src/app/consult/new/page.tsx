@@ -12,9 +12,12 @@ import CompletenessIcon from '@/components/icons/CompletenessIcon';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { saveConsultDraft, loadConsultDraft } from '@/components/ConsultDraft';
+import LoadingModal from '@/components/LoadingModal'; // ← 追加
+
 
 export default function Page() {
   const [text, setText] = useState('');
+  const [submitting, setSubmitting] = useState(false);
   const { analysis, isLoading, analyzeInput, handleFileUpload, isFileUploading } = useRealtimeAnalysis();
   const level: CompletenessLevel = analysis?.completeness ?? 1;
   const suggestions = analysis?.suggestions ?? [];
@@ -46,12 +49,22 @@ export default function Page() {
   // })();
 
   const handleSubmit = async () => {
-       if (!text.trim()) return;
-       // TODO: API実装後はここでPOSTし、戻り値のidを使う
-       saveConsultDraft(text);
-       const id = Date.now().toString(); // 仮ID
-       router.push(`/consult/summary`);
-     };
+    if (!text.trim() || submitting) return;
+    setSubmitting(true);
+  
+    try {
+      saveConsultDraft(text);
+  
+      // 2秒間解析中モーダルを表示
+      setTimeout(() => {
+        router.push(`/consult/summary`);
+      }, 2000);
+    } catch (e) {
+      console.error('送信に失敗:', e);
+      setSubmitting(false);
+      alert('送信に失敗しました。時間をおいて再度お試しください。');
+    }
+  };
 
   const isSubmitDisabled = !text.trim() || isLoading || isFileUploading;
   const bubbleColor = (() => {
@@ -119,16 +132,16 @@ export default function Page() {
       
       {/* 独立した送信ボタン（カード外・右寄せ） */}
       <div className="flex justify-end hover:opacity-80 transition-opacity">
-        <button
-          type="button"
-          onClick={handleSubmit}
-          disabled={isSubmitDisabled}
-          className="inline-flex items-center gap-3 rounded-md px-6 py-3 text-base font-bold"
-          style={{
-            backgroundColor: isSubmitDisabled ? '#FFFFFF99' : '#FFFFFF',
-            color: '#272727',
-          }}
-        >
+            <button
+        type="button"
+        onClick={handleSubmit}
+        disabled={isSubmitDisabled || submitting}   // ← 送信中も無効化
+        className="inline-flex items-center gap-3 rounded-md px-6 py-3 text-base font-bold"
+        style={{
+          backgroundColor: (isSubmitDisabled || submitting) ? '#FFFFFF99' : '#FFFFFF',
+          color: '#272727',
+        }}
+      >
           <CompletenessIcon
             active
             color="#000000"
@@ -140,7 +153,9 @@ export default function Page() {
           />
           送信
         </button>
+        
       </div>
+      <LoadingModal open={submitting} />
     </div>
   );
 }
