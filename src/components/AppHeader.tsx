@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { CompletenessIcon } from '@/components/icons/CompletenessIcon';
 
 export default function AppHeader() {
   const pathname = usePathname();
@@ -21,23 +20,9 @@ export default function AppHeader() {
             isConsult ? 'text-white' : 'text-white/80 hover:text-white'
           }`}
         >
-          <CompletenessIcon
-            color="#F93827"
-            size={20}
-            className="shrink-0 ml-2"
-            withRing={true}
-            strokeWidth={1}
-          />
           質問
         </Link>
         <span className="text-lg font-bold tracking-wider text-white/50 cursor-not-allowed select-none">
-          <CompletenessIcon
-            color="#16C47F"
-            size={20}
-            className="shrink-0 ml-2"
-            withRing={true}
-            strokeWidth={1}
-          />
           検索
         </span>
       </nav>

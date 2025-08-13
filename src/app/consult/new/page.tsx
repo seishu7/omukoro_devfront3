@@ -8,7 +8,7 @@ import { SuggestionList } from '@/components/SuggestionList';
 import { useRealtimeAnalysis } from '@/hooks/useRealtimeAnalysis';
 // import { ArrowRight } from 'lucide-react';
 import Bubble from '@/components/Bubble';
-import { CompletenessIcon } from '@/components/icons/CompletenessIcon';
+import CompletenessIcon from '@/components/icons/CompletenessIcon';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { saveConsultDraft, loadConsultDraft } from '@/components/ConsultDraft';
@@ -130,8 +130,12 @@ export default function Page() {
           }}
         >
           <CompletenessIcon
+            active
             color="#000000"
-            size={20}
+            background="transparent"
+            width={20}
+            height={18}
+            ariaLabel="送信"
             className="shrink-0"
           />
           送信
