@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import CompletenessIcon from './icons/CompletenessIcon';
+import { CompletenessIcon } from './icons/CompletenessIcon';
 
 export type CompletenessLevel = 1 | 2 | 3 | 4 | 5;
 
@@ -36,16 +36,18 @@ export function RealtimeProgressBar({ level, className = '', withLabel = true, l
   return (
     <div className={`flex items-center gap-2 ${className}`} aria-label="情報の充足度">
       <div className="flex items-center gap-2">
-      {segments.map((seg) => (
-        <CompletenessIcon
-          key={seg}
-          active={seg <= level}
-          color={activeColor}
-          background="#FFFFFF" // バー表示のときは白背景
-          width={24}
-          height={22}
-        />
-      ))}
+      {segments.map((seg) => {
+        const isActive = seg <= level;
+        return (
+         <CompletenessIcon
+           key={seg}
+           size={20}
+           color="#FFFFFF"
+           state={isActive ? 'active' : 'inactive'}
+           
+          />
+        );
+      })}
       </div>
       {withLabel && (
         <span className="text-white text-sm font-bold" aria-live="polite">
