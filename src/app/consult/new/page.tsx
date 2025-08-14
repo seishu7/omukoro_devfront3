@@ -13,12 +13,21 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { saveConsultDraft, loadConsultDraft } from '@/components/ConsultDraft';
 import LoadingModal from '@/components/LoadingModal'; // ← 追加
+import { UploadedFileList } from '@/components/UploadedFileList'; // ← 追加
 
 
 export default function Page() {
   const [text, setText] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const { analysis, isLoading, analyzeInput, handleFileUpload, isFileUploading } = useRealtimeAnalysis();
+  const { 
+    analysis, 
+    isLoading, 
+    analyzeInput, 
+    handleFileUpload, 
+    isFileUploading, 
+    uploadedFiles, 
+    removeFile 
+  } = useRealtimeAnalysis();
   const level: CompletenessLevel = analysis?.completeness ?? 1;
   const suggestions = analysis?.suggestions ?? [];
   const showProgress = text.trim().length > 0 && !isLoading && !isFileUploading && !!analysis;
@@ -84,17 +93,17 @@ export default function Page() {
 
       {/* 入力カード（吹き出しはカード外・左下に表示） */}
       <div className="relative w-full">
-        <section className="bg-white rounded-2xl p-0 space-y-10 shadow-sm">
-          <div className="relative">
-            <ConsultTextArea
-              value={text}
-              onChange={(v) => {
-                setText(v);
-                analyzeInput(v);
-              }}
-              onFilesSelect={(files) => handleFileUpload(files)}
-            />
-          </div>
+        <section className="bg-white rounded-2xl p-0 shadow-sm">
+          <ConsultTextArea
+            value={text}
+            onChange={(v) => {
+              setText(v);
+              analyzeInput(v);
+            }}
+            onFilesSelect={handleFileUpload}
+          />
+          <UploadedFileList files={uploadedFiles} onRemoveFile={removeFile} />
+          
           {(isLoading || isFileUploading) && (
             <div className="px-6 pb-4">
               <p className="text-xs text-gray-600">解析中...</p>
@@ -116,7 +125,7 @@ export default function Page() {
             {/* 提案のみ：ConsultTextArea 左下（入力カード外） */}
             {suggestions.length > 0 && (
               <div
-                className="absolute left-6 z-10 max-w-[50vw]" //表示幅を調整
+                className="absolute left-6 z-10 max-w-[30vw]" //表示幅を調整
                 style={{ top: 'calc(100% + 8px)' }}
               >
                 <Bubble color={bubbleColor} tailSide="top" tailOffsetClass="left-8">

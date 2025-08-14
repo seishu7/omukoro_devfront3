@@ -8,10 +8,11 @@ type AnalyzeResult = {
   confidence?: number;
 };
 
-type UploadedFile = {
+export type UploadedFile = {
   id: string;
   name: string;
   size: number;
+  content: string; // 各ファイルから抽出されたテキストを保持
 };
 
 const ALLOWED_EXTENSIONS = ['.docx', '.xlsx'];
@@ -83,8 +84,14 @@ export function useRealtimeAnalysis() {
   }, [analyzeNow, docText]);
 
   const removeFile = useCallback((id: string) => {
-    setUploadedFiles(prev => prev.filter(f => f.id !== id));
-  }, []);
+    const newUploadedFiles = uploadedFiles.filter(f => f.id !== id);
+    setUploadedFiles(newUploadedFiles);
+    
+    // ファイル削除後にdocTextを再構築して分析
+    const newDocText = newUploadedFiles.map(f => f.content).join('\n\n');
+    setDocText(newDocText);
+    void analyzeNow(inputText, newDocText);
+  }, [uploadedFiles, analyzeNow, inputText]);
 
   const handleFileUpload = useCallback(async (files: FileList | File[]) => {
     const fileArray = Array.from(files);
@@ -92,6 +99,13 @@ export function useRealtimeAnalysis() {
     if (validFiles.length === 0) return;
 
     setIsFileUploading(true);
+    const tempItems = validFiles.map((f) => ({
+      id: `${f.name}-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      name: f.name,
+      size: f.size,      // まずはクライアントサイズ
+      content: '',       // 後でサーバ抽出結果で上書き
+    }));
+    setUploadedFiles((prev) => [...prev, ...tempItems]);
     try {
       const form = new FormData();
       validFiles.forEach(f => form.append('files[]', f));
@@ -106,20 +120,31 @@ export function useRealtimeAnalysis() {
       if (!res.ok) throw new Error('extract failed');
       const data = await res.json() as { extractedText?: string; files?: { name: string; bytes: number }[] };
 
-      setDocText(data.extractedText || '');
-      setUploadedFiles(prev => [
-        ...prev,
-        ...(data.files || []).map((f) => ({ id: `${f.name}-${Date.now()}`, name: f.name, size: f.bytes })),
-      ]);
+      const newExtractedText = data.extractedText || '';
+      // 既存のdocTextに新しいファイル内容を追記
+      const newDocText = (docText ? docText + '\n\n' : '') + newExtractedText;
+      setDocText(newDocText);
 
-      // 抽出完了後に再評価（デバウンスせず即時）
-      await analyzeNow(inputText, data.extractedText || '');
+      const serverFiles = (data.files || []);
+      setUploadedFiles((prev) => {
+        const head = prev.slice(0, Math.max(0, prev.length - tempItems.length));
+        const tail = tempItems.map((t, i) => ({
+          ...t,
+          // 名前マッチでサイズ更新（fallback: 既存サイズ）
+          size: serverFiles[i]?.bytes ?? t.size,
+          content: newExtractedText,
+        }));
+        return [...head, ...tail];
+      });
+
+      // 抽出完了後に再評価
+      await analyzeNow(inputText, newDocText);
     } catch {
       // 失敗時はdocTextを維持（テキストのみで継続）
     } finally {
       setIsFileUploading(false);
     }
-  }, [analyzeNow, inputText]);
+  }, [analyzeNow, inputText, docText]);
 
   useEffect(() => {
     // 初回・入力/抽出変更時のキャッシュヒットを優先
