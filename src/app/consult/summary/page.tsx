@@ -1,121 +1,209 @@
 'use client';
 
-import { useRouter, useParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { loadConsultDraft } from '@/components/ConsultDraft';
 import { useEffect, useState } from 'react';
 
-interface Consultant {
-  name: string;
-  department: string;
-  expertise: string;
-  channelId?: string;
-  mentionUserId?: string;
+// 型定義
+interface CategoryItem {
+  category_id: string;
+  category_name: string;
 }
 
-interface AnalyticsData {
-  summary: string;
-  questions: string[];
-  consultants: Consultant[];
-  analysis_metadata: {
-    confidence: number;
-    generated_at: string;
-  };
+interface AlcoholType {
+  type_id: string;
+  type_name: string;
+}
+
+interface Regulation {
+  prefLabel?: string;
+  section_label?: string;
+  score?: number;
+  text: string;
+}
+
+interface ConsultationDetail {
+  consultation_id?: string;
+  title?: string;
+  summary_title?: string;
+  initial_content?: string;
+  content?: string;
+  created_at?: string;
+  status?: string;
+  industry_category_id?: string;
+  alcohol_type_id?: string;
+  key_issues?: string;
+  suggested_questions?: string[];
+  action_items?: string;
+  relevant_regulations?: Regulation[];
 }
 
 export default function SummaryPage() {
   const router = useRouter();
-  const params = useParams<{ id: string }>();
   const draft = loadConsultDraft();
   const question = draft?.text ?? '（直前の相談文を取得できませんでした）';
-
-  const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSending, setIsSending] = useState(false);
-
-  // ページ読み込み時に分析データを取得
+  const [consultationDetail, setConsultationDetail] = useState<ConsultationDetail | null>(null);
+  const [categoryMappings, setCategoryMappings] = useState<{
+    industry: Record<string, string>;
+    alcohol: Record<string, string>;
+  }>({ industry: {}, alcohol: {} });
+  
+  // 相談IDを取得
+  const consultationId = localStorage.getItem('consultation_id');
+  
+  // カテゴリマッピングを取得
   useEffect(() => {
-    const fetchAnalytics = async () => {
-      if (!question || question === '（直前の相談文を取得できませんでした）') {
-        setIsLoading(false);
-        return;
-      }
-
+    const fetchCategoryMappings = async () => {
       try {
-        const response = await fetch('/api/analytics', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            text: question,
-          }),
-        });
-
-        const result = await response.json();
-        if (result.success) {
-          setAnalyticsData(result.data);
+        const apiUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
+        
+        // 業種カテゴリの取得
+        const industryResponse = await fetch(`${apiUrl}/api/consultations/industry-categories`);
+        if (industryResponse.ok) {
+          const industryData = await industryResponse.json();
+          console.log('業種カテゴリAPIレスポンス:', industryData);
+          
+          // 配列かどうかチェック
+          if (Array.isArray(industryData)) {
+            const industryMap: Record<string, string> = {};
+            industryData.forEach((cat: CategoryItem) => {
+              industryMap[cat.category_id] = cat.category_name;
+            });
+            
+            // 酒類タイプの取得
+            const alcoholResponse = await fetch(`${apiUrl}/api/consultations/alcohol-types`);
+            if (alcoholResponse.ok) {
+              const alcoholData = await alcoholResponse.json();
+              console.log('酒類タイプAPIレスポンス:', alcoholData);
+              
+              // 配列かどうかチェック
+              if (Array.isArray(alcoholData)) {
+                const alcoholMap: Record<string, string> = {};
+                alcoholData.forEach((type: AlcoholType) => {
+                  alcoholMap[type.type_id] = type.type_name;
+                });
+                
+                setCategoryMappings({ industry: industryMap, alcohol: alcoholMap });
+                console.log('カテゴリマッピング設定完了:', { industry: industryMap, alcohol: alcoholMap });
+              } else {
+                console.warn('酒類タイプデータが配列ではありません:', alcoholData);
+                setDefaultCategoryMappings();
+              }
+            } else {
+              console.warn('酒類タイプAPIエラー:', alcoholResponse.status);
+              setDefaultCategoryMappings();
+            }
+          } else {
+            console.warn('業種カテゴリデータが配列ではありません:', industryData);
+            setDefaultCategoryMappings();
+          }
+        } else {
+          console.warn('業種カテゴリAPIエラー:', industryResponse.status);
+          setDefaultCategoryMappings();
         }
       } catch (error) {
-        console.error('Analytics fetch error:', error);
-      } finally {
-        setIsLoading(false);
+        console.error('カテゴリマッピングの取得に失敗:', error);
+        setDefaultCategoryMappings();
       }
     };
-
-    fetchAnalytics();
-  }, [question]);
-
-  // Teams送信処理
-  const handleSendToTeams = async (consultant: Consultant) => {
-    if (!analyticsData) return;
-
-    setIsSending(true);
-
-    try {
-      const questionsText = analyticsData.questions
-        .map((q, i) => `${i + 1}. ${q}`)
-        .join('\n');
-
-      const message = `【相談依頼】
-
-【相談内容】
-${analyticsData.summary}
-
-【質問事項】
-${questionsText}
-
-【相談者より】
-上記について、ご知見をお聞かせいただけますでしょうか。
-よろしくお願いいたします。`;
-
-      const response = await fetch('/api/teams/send', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
+    
+    const setDefaultCategoryMappings = () => {
+      // フォールバック用のデフォルトマッピング
+      const defaultMappings = {
+        industry: {
+          'cat0001': 'マーケティング商品企画',
+          'cat0002': '製造',
+          'cat0003': '研究開発',
+          'cat0004': '中身開発',
+          'cat0005': '物流'
         },
-        body: JSON.stringify({
-          message: message,
-          consultantName: consultant.name,
-          consultantDepartment: consultant.department,
-          channelId: consultant.channelId,
-          mentionUserId: consultant.mentionUserId,
-        }),
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        alert(`${consultant.name}さんにTeamsで相談を送信しました！`);
-      } else {
-        alert(`送信に失敗しました: ${result.message}`);
+        alcohol: {
+          'alc0001': 'ビールテイスト',
+          'alc0002': 'RTD/RTS',
+          'alc0003': 'ワイン',
+          'alc0004': '和酒',
+          'alc0005': 'ノンアルコール'
+        }
+      };
+      setCategoryMappings(defaultMappings);
+      console.log('デフォルトカテゴリマッピングを設定:', defaultMappings);
+    };
+    
+    fetchCategoryMappings();
+  }, []);
+  
+  // 相談詳細を取得
+  useEffect(() => {
+    console.log('useEffect実行 - consultationId:', consultationId);
+    
+    if (consultationId) {
+      // localStorageから保存されたデータを取得
+      const savedData = localStorage.getItem('consultation_data');
+      console.log('localStorageから取得したデータ:', savedData);
+      
+      if (savedData) {
+        try {
+          const parsedData = JSON.parse(savedData);
+          console.log('パースしたデータ:', parsedData);
+          setConsultationDetail(parsedData);
+        } catch (error) {
+          console.error('保存されたデータの解析に失敗:', error);
+        }
       }
-    } catch (error) {
-      console.error('Teams send error:', error);
-      alert('Teams送信中にエラーが発生しました');
-    } finally {
-      setIsSending(false);
+      
+      // バックエンドAPIから最新データを取得（タイムアウトを短縮）
+      const timer = setTimeout(async () => {
+        try {
+          console.log('バックエンドAPI呼び出し開始:', `http://localhost:8000/api/consultations/${consultationId}`);
+          const response = await fetch(`http://localhost:8000/api/consultations/${consultationId}`);
+          console.log('APIレスポンス:', response);
+          
+          if (response.ok) {
+            const data = await response.json();
+            console.log('バックエンドから相談詳細を取得:', data);
+            
+            // バックエンドのデータが存在する場合のみ更新
+            if (data && Object.keys(data).length > 0) {
+              // 既存のデータとマージして、空のフィールドを上書きしない
+              setConsultationDetail(prevDetail => {
+                const mergedData = { ...prevDetail, ...data };
+                
+                // 空のフィールドは既存データを維持
+                if (!mergedData.key_issues && prevDetail?.key_issues) {
+                  mergedData.key_issues = prevDetail.key_issues;
+                }
+                if (!mergedData.suggested_questions && prevDetail?.suggested_questions) {
+                  mergedData.suggested_questions = prevDetail.suggested_questions;
+                }
+                if (!mergedData.action_items && prevDetail?.action_items) {
+                  mergedData.action_items = prevDetail.action_items;
+                }
+                if (!mergedData.relevant_regulations && prevDetail?.relevant_regulations) {
+                  mergedData.relevant_regulations = prevDetail.relevant_regulations;
+                }
+                
+                // マージされたデータをlocalStorageにも保存
+                localStorage.setItem('consultation_data', JSON.stringify(mergedData));
+                console.log('バックエンドデータとマージしてlocalStorageに保存:', mergedData);
+                
+                return mergedData;
+              });
+            } else {
+              console.log('バックエンドデータが空のため、既存データを維持');
+            }
+          } else {
+            console.error('APIエラー:', response.status, response.statusText);
+            // APIエラーの場合、既存データを維持
+          }
+        } catch (error) {
+          console.error('バックエンドからの相談詳細取得に失敗:', error);
+          // エラーの場合、既存データを維持
+        }
+      }, 1000); // タイムアウトを1秒に短縮
+      
+      return () => clearTimeout(timer);
     }
-  };
+  }, [consultationId]);
   
   return (
     <div className="relative min-h-screen">
@@ -137,23 +225,14 @@ ${questionsText}
         <div className="rounded-3xl bg-gradient-to-b from-[#2b2b2b] to-[#1f1f1f] text-white p-6 shadow-lg flex items-center gap-4">
           <div className="h-14 w-14 rounded-full overflow-hidden shrink-0 bg-white/10" />
           <div className="flex-1">
-            <div className="text-xs text-white/70">
-              {analyticsData?.consultants[0]?.department || '品質保証部'}
-            </div>
-            <div className="text-xl font-semibold">
-              {analyticsData?.consultants[0]?.name || '佐々木 昌平'} さん
-            </div>
+            <div className="text-xs text-white/70">品質保証部</div>
+            <div className="text-xl font-semibold">佐々木 昌平 さん</div>
             <div className="mt-2 flex gap-2">
         {/* ▼ SVG( /TeamsIcon.svg ) を埋め込んだピル型ボタン */}
         {/* public/TeamsButton.svg をそのままボタンとして使う */}
             <button
-            onClick={() => {
-              if (analyticsData?.consultants[0]) {
-                handleSendToTeams(analyticsData.consultants[0]);
-              }
-            }}
-            disabled={isSending || !analyticsData}
-            className="p-0 border-0 bg-transparent cursor-pointer disabled:opacity-50"
+            onClick={() => alert('準備中です（Teams連絡）')}
+            className="p-0 border-0 bg-transparent cursor-pointer"
             title="Teamsで連絡する"
             >
             <img
@@ -181,64 +260,162 @@ ${questionsText}
 
         {/* 本文カード */}
         <div className="mt-6 rounded-xl bg-white shadow p-6">
-          <h2 className="text-lg font-bold mb-2">打ち込んだ内容の要約</h2>
-          <p className="text-sm text-gray-600 mb-4">相談ID: {params.id}</p>
+          <h2 className="text-lg font-bold mb-2">相談結果サマリー</h2>
+          <p className="text-sm text-gray-600 mb-4">相談ID: {consultationId || '生成中...'}</p>
 
-          {/* 相談内容（AI要約） */}
+          {/* タイトル */}
           <div className="mb-6">
             <div className="flex items-center gap-2 mb-1">
               <BubbleSvg className="h-4 w-4 text-gray-500" />
-              <h3 className="text-sm text-gray-500">相談内容（AI要約）</h3>
+              <h3 className="text-sm text-gray-500">タイトル</h3>
             </div>
-            <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 whitespace-pre-wrap text-[15px] text-gray-800">
-              {analyticsData?.summary || question}
+            <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 text-[15px] text-gray-800 font-medium">
+              {consultationDetail?.title || '相談内容'}
             </div>
           </div>
 
-          {/* 質問事項（AIが生成） */}
+          {/* 相談内容要約 */}
           <div className="mb-6">
             <div className="flex items-center gap-2 mb-1">
               <BubbleSvg className="h-4 w-4 text-gray-500" />
-              <h3 className="text-sm text-gray-500">質問事項</h3>
+              <h3 className="text-sm text-gray-500">相談内容要約</h3>
+            </div>
+            <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 text-[15px] text-gray-800">
+              {consultationDetail?.summary_title || `相談内容: ${question}`}
+            </div>
+          </div>
+
+          {/* 入力内容 */}
+          <div className="mb-6">
+            <div className="flex items-center gap-2 mb-1">
+              <BubbleSvg className="h-4 w-4 text-gray-500" />
+              <h3 className="text-sm text-gray-500">入力内容</h3>
+            </div>
+            <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 whitespace-pre-wrap text-[15px] text-gray-800">
+              {consultationDetail?.initial_content || question}
+            </div>
+          </div>
+
+          {/* 業種・酒類カテゴリ */}
+          <div className="mb-6">
+            <div className="flex items-center gap-2 mb-1">
+              <BubbleSvg className="h-4 w-4 text-gray-500" />
+              <h3 className="text-sm text-gray-500">カテゴリ分類</h3>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="bg-blue-50 rounded-lg border border-blue-200 p-4">
+                <h4 className="font-medium text-blue-900 mb-2 text-sm">業種カテゴリ</h4>
+                <p className="text-blue-700 text-sm">
+                  {consultationDetail?.industry_category_id ? 
+                    categoryMappings.industry[consultationDetail.industry_category_id] || '不明' : 
+                    '分析中...'}
+                </p>
+              </div>
+              <div className="bg-green-50 rounded-lg border border-green-200 p-4">
+                <h4 className="font-medium text-green-900 mb-2 text-sm">酒類タイプ</h4>
+                <p className="text-blue-700 text-sm">
+                  {consultationDetail?.alcohol_type_id ? 
+                    categoryMappings.alcohol[consultationDetail.alcohol_type_id] || '不明' : 
+                    '分析中...'}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* 主要論点 */}
+          <div className="mb-6">
+            <div className="flex items-center gap-2 mb-1">
+              <BubbleSvg className="h-4 w-4 text-gray-500" />
+              <h3 className="text-sm text-gray-500">主要論点</h3>
             </div>
             <div className="rounded-lg border border-gray-200 p-4 leading-7 text-gray-800">
-              {isLoading ? (
-                <div className="text-gray-500">質問事項を生成中...</div>
-              ) : analyticsData?.questions ? (
-                <ul className="space-y-2">
-                  {analyticsData.questions.map((q, index) => (
-                    <li key={index} className="flex items-start gap-2">
-                      <span className="text-blue-600 font-medium">{index + 1}.</span>
-                      <span>{q}</span>
-                    </li>
-                  ))}
-                </ul>
+              {consultationDetail?.key_issues ? (
+                <div className="whitespace-pre-wrap text-sm">
+                  {consultationDetail.key_issues}
+                </div>
               ) : (
-                <div className="text-gray-500">質問事項の生成に失敗しました。</div>
+                <p className="text-gray-500">データを取得できていません。AIによる主要論点分析が完了していない可能性があります。</p>
               )}
             </div>
           </div>
 
-          {/* 関連根拠セクション（ダミー） */}
+          {/* 提案質問 */}
           <div className="mb-6">
-            <h3 className="text-sm text-gray-500 mb-2">関連根拠</h3>
-            <div className="rounded-lg border border-gray-200 p-4 text-sm text-gray-700">
-              根拠リンクや引用をここに表示します。
+            <div className="flex items-center gap-2 mb-1">
+              <BubbleSvg className="h-4 w-4 text-gray-500" />
+              <h3 className="text-sm text-gray-500">提案質問</h3>
+            </div>
+            <div className="rounded-lg border border-gray-200 p-4 leading-7 text-gray-800">
+              {consultationDetail?.suggested_questions && consultationDetail.suggested_questions.length > 0 ? (
+                <ul className="space-y-2">
+                  {consultationDetail.suggested_questions.map((question: string, index: number) => (
+                    <li key={index} className="flex items-start gap-2">
+                      <span className="text-blue-600 font-medium">{index + 1}.</span>
+                      <span>{question}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-gray-500">データを取得できていません。AIによる質問生成が完了していない可能性があります。</p>
+              )}
             </div>
           </div>
 
+          {/* 次のアクション */}
+          <div className="mb-6">
+            <div className="flex items-center gap-2 mb-1">
+              <BubbleSvg className="h-4 w-4 text-gray-500" />
+              <h3 className="text-sm text-gray-500">次のアクション</h3>
+            </div>
+            <div className="rounded-lg border border-gray-200 p-4 text-sm text-gray-700">
+              {consultationDetail?.action_items ? (
+                <div className="whitespace-pre-wrap text-sm">
+                  {consultationDetail.action_items}
+                </div>
+              ) : (
+                <p className="text-gray-500">データを取得できていません。AIによるアクション項目生成が完了していない可能性があります。</p>
+              )}
+            </div>
+          </div>
 
-          {/* --- 「関連が近い相談」セクション --- */}
-            <div className="mb-6">
-            <h3 className="text-sm text-gray-500 mb-2 flex items-center gap-2">
-                <img src="/Omusubi2.svg" alt="" width={40} height={40} />
-                関連が近い相談
-            </h3>
+          {/* 関連法令の表示 */}
+          <div className="mb-6">
+            <div className="flex items-center gap-2 mb-1">
+              <BubbleSvg className="h-4 w-4 text-gray-500" />
+              <h3 className="text-sm text-gray-500">関連法令</h3>
+            </div>
+            <div className="rounded-lg border border-gray-200 p-4">
+              {consultationDetail?.relevant_regulations && consultationDetail.relevant_regulations.length > 0 ? (
+                <div className="space-y-3">
+                  {consultationDetail.relevant_regulations.map((regulation: Regulation, index: number) => (
+                    <div key={index} className="border-l-4 border-blue-500 pl-3">
+                      <div className="flex justify-between items-start mb-1">
+                        <h4 className="font-medium text-gray-900">{regulation.prefLabel || regulation.section_label}</h4>
+                        <span className="text-sm text-gray-500">
+                          関連度: {regulation.score ? (regulation.score * 100).toFixed(1) : 'N/A'}%
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-700">{regulation.text}</p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-500">データを取得できていません。ベクトル検索による関連法令の抽出が完了していない可能性があります。</p>
+              )}
+            </div>
+          </div>
+
+          {/* 類似相談案件 */}
+          <div className="mb-6">
+            <div className="flex items-center gap-2 mb-1">
+              <img src="/Omusubi2.svg" alt="" width={20} height={20} />
+              <h3 className="text-sm text-gray-500">類似相談案件</h3>
+            </div>
             <div className="rounded-lg border border-gray-200 p-4 text-sm text-gray-700 space-y-2">
-                <p>過去の相談：「酒税法に関する納税猶予申請について」</p>
-                <p>過去の相談：「特定酒類の分類基準に関する照会」</p>
+              <p>過去の相談：「酒税法に関する納税猶予申請について」</p>
+              <p>過去の相談：「特定酒類の分類基準に関する照会」</p>
             </div>
-            </div>
+          </div>
 
           {/* アクション列 */}
           <div className="flex flex-col sm:flex-row gap-3 sm:justify-between">

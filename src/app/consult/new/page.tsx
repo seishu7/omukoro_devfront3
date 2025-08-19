@@ -63,11 +63,31 @@ export default function Page() {
   
     try {
       saveConsultDraft(text);
-  
-      // 2秒間解析中モーダルを表示
-      setTimeout(() => {
-        router.push(`/consult/summary`);
-      }, 2000);
+      
+      // 相談提案生成APIを呼び出し
+      const formData = new FormData();
+      formData.append('text', text);
+      
+      // ローカルバックエンドのURLを使用
+      const apiUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
+      const response = await fetch(`${apiUrl}/api/consultations/generate-suggestions`, {
+        method: 'POST',
+        body: formData,
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        // 相談IDとAPIレスポンス全体を保存
+        localStorage.setItem('consultation_id', result.consultation_id);
+        localStorage.setItem('consultation_data', JSON.stringify(result));
+        
+        // 2秒間解析中モーダルを表示
+        setTimeout(() => {
+          router.push(`/consult/summary`);
+        }, 2000);
+      } else {
+        throw new Error('相談提案生成に失敗しました');
+      }
     } catch (e) {
       console.error('送信に失敗:', e);
       setSubmitting(false);
