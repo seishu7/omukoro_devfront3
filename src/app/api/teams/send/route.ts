@@ -11,9 +11,9 @@ interface TeamsSendRequest {
 // Microsoft Graph APIトークン取得関数（内部関数として実装）
 async function getAccessToken(): Promise<string> {
   const refreshToken = process.env.GRAPH_REFRESH_TOKEN;
-  const clientId = process.env.NEXT_PUBLIC_AZURE_CLIENT_ID;
+  const clientId = process.env.AZURE_CLIENT_ID;
   const clientSecret = process.env.AZURE_CLIENT_SECRET;
-  const tenantId = process.env.NEXT_PUBLIC_AZURE_TENANT_ID;
+  const tenantId = process.env.AZURE_TENANT_ID;
 
   // 必要な環境変数のチェック
   if (!refreshToken || !clientId || !clientSecret || !tenantId) {
