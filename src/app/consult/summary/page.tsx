@@ -51,11 +51,13 @@ export default function SummaryPage() {
   // 相談IDを取得
   const consultationId = localStorage.getItem('consultation_id');
   
+  // APIのベースURL
+  const apiUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
+  
   // カテゴリマッピングを取得
   useEffect(() => {
     const fetchCategoryMappings = async () => {
       try {
-        const apiUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
         
         // 業種カテゴリの取得
         const industryResponse = await fetch(`${apiUrl}/api/consultations/industry-categories`);
@@ -154,7 +156,6 @@ export default function SummaryPage() {
       // バックエンドAPIから最新データを取得（タイムアウトを短縮）
       const timer = setTimeout(async () => {
         try {
-          const apiUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
           console.log('バックエンドAPI呼び出し開始:', `${apiUrl}/api/consultations/${consultationId}`);
           const response = await fetch(`${apiUrl}/api/consultations/${consultationId}`);
           console.log('APIレスポンス:', response);
