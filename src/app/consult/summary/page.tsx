@@ -2,6 +2,25 @@
 
 import { useRouter, useParams } from 'next/navigation';
 import { loadConsultDraft } from '@/components/ConsultDraft';
+import { useEffect, useState } from 'react';
+
+interface Consultant {
+  name: string;
+  department: string;
+  expertise: string;
+  channelId?: string;
+  mentionUserId?: string;
+}
+
+interface AnalyticsData {
+  summary: string;
+  questions: string[];
+  consultants: Consultant[];
+  analysis_metadata: {
+    confidence: number;
+    generated_at: string;
+  };
+}
 
 export default function SummaryPage() {
   const router = useRouter();
@@ -9,6 +28,95 @@ export default function SummaryPage() {
   const draft = loadConsultDraft();
   const question = draft?.text ?? '（直前の相談文を取得できませんでした）';
 
+  const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSending, setIsSending] = useState(false);
+
+  // ページ読み込み時に分析データを取得
+  useEffect(() => {
+    const fetchAnalytics = async () => {
+      if (!question || question === '（直前の相談文を取得できませんでした）') {
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/analytics', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            text: question,
+          }),
+        });
+
+        const result = await response.json();
+        if (result.success) {
+          setAnalyticsData(result.data);
+        }
+      } catch (error) {
+        console.error('Analytics fetch error:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchAnalytics();
+  }, [question]);
+
+  // Teams送信処理
+  const handleSendToTeams = async (consultant: Consultant) => {
+    if (!analyticsData) return;
+
+    setIsSending(true);
+
+    try {
+      const questionsText = analyticsData.questions
+        .map((q, i) => `${i + 1}. ${q}`)
+        .join('\n');
+
+      const message = `【相談依頼】
+
+【相談内容】
+${analyticsData.summary}
+
+【質問事項】
+${questionsText}
+
+【相談者より】
+上記について、ご知見をお聞かせいただけますでしょうか。
+よろしくお願いいたします。`;
+
+      const response = await fetch('/api/teams/send', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: message,
+          consultantName: consultant.name,
+          consultantDepartment: consultant.department,
+          channelId: consultant.channelId,
+          mentionUserId: consultant.mentionUserId,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        alert(`${consultant.name}さんにTeamsで相談を送信しました！`);
+      } else {
+        alert(`送信に失敗しました: ${result.message}`);
+      }
+    } catch (error) {
+      console.error('Teams send error:', error);
+      alert('Teams送信中にエラーが発生しました');
+    } finally {
+      setIsSending(false);
+    }
+  };
+  
   return (
     <div className="relative min-h-screen">
       {/* ← consult/layout.tsx で全画面ドット背景を敷いているので、ここでの背景指定は不要 */}
@@ -29,14 +137,23 @@ export default function SummaryPage() {
         <div className="rounded-3xl bg-gradient-to-b from-[#2b2b2b] to-[#1f1f1f] text-white p-6 shadow-lg flex items-center gap-4">
           <div className="h-14 w-14 rounded-full overflow-hidden shrink-0 bg-white/10" />
           <div className="flex-1">
-            <div className="text-xs text-white/70">品質保証部</div>
-            <div className="text-xl font-semibold">佐々木 昌平 さん</div>
+            <div className="text-xs text-white/70">
+              {analyticsData?.consultants[0]?.department || '品質保証部'}
+            </div>
+            <div className="text-xl font-semibold">
+              {analyticsData?.consultants[0]?.name || '佐々木 昌平'} さん
+            </div>
             <div className="mt-2 flex gap-2">
         {/* ▼ SVG( /TeamsIcon.svg ) を埋め込んだピル型ボタン */}
         {/* public/TeamsButton.svg をそのままボタンとして使う */}
             <button
-            onClick={() => alert('準備中です（Teams連絡）')}
-            className="p-0 border-0 bg-transparent cursor-pointer"
+            onClick={() => {
+              if (analyticsData?.consultants[0]) {
+                handleSendToTeams(analyticsData.consultants[0]);
+              }
+            }}
+            disabled={isSending || !analyticsData}
+            className="p-0 border-0 bg-transparent cursor-pointer disabled:opacity-50"
             title="Teamsで連絡する"
             >
             <img
@@ -74,7 +191,7 @@ export default function SummaryPage() {
               <h3 className="text-sm text-gray-500">相談内容（AI要約）</h3>
             </div>
             <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 whitespace-pre-wrap text-[15px] text-gray-800">
-              {question}
+              {analyticsData?.summary || question}
             </div>
           </div>
 
@@ -85,8 +202,20 @@ export default function SummaryPage() {
               <h3 className="text-sm text-gray-500">質問事項</h3>
             </div>
             <div className="rounded-lg border border-gray-200 p-4 leading-7 text-gray-800">
-              {/* TODO: AIによる質問生成結果をリストで表示 */}
-              ここにAIが生成した質問が入ります。
+              {isLoading ? (
+                <div className="text-gray-500">質問事項を生成中...</div>
+              ) : analyticsData?.questions ? (
+                <ul className="space-y-2">
+                  {analyticsData.questions.map((q, index) => (
+                    <li key={index} className="flex items-start gap-2">
+                      <span className="text-blue-600 font-medium">{index + 1}.</span>
+                      <span>{q}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <div className="text-gray-500">質問事項の生成に失敗しました。</div>
+              )}
             </div>
           </div>
 
