@@ -154,8 +154,9 @@ export default function SummaryPage() {
       // バックエンドAPIから最新データを取得（タイムアウトを短縮）
       const timer = setTimeout(async () => {
         try {
-          console.log('バックエンドAPI呼び出し開始:', `http://localhost:8000/api/consultations/${consultationId}`);
-          const response = await fetch(`http://localhost:8000/api/consultations/${consultationId}`);
+          const apiUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
+          console.log('バックエンドAPI呼び出し開始:', `${apiUrl}/api/consultations/${consultationId}`);
+          const response = await fetch(`${apiUrl}/api/consultations/${consultationId}`);
           console.log('APIレスポンス:', response);
           
           if (response.ok) {
