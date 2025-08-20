@@ -47,6 +47,7 @@ export default function SummaryPage() {
     industry: Record<string, string>;
     alcohol: Record<string, string>;
   }>({ industry: {}, alcohol: {} });
+  const [isTeamsSending, setIsTeamsSending] = useState(false);
   
   // 相談IDを取得
   const consultationId = localStorage.getItem('consultation_id');
@@ -207,6 +208,67 @@ export default function SummaryPage() {
     }
   }, [consultationId]);
   
+  // Teams送信処理
+  const handleTeamsSend = async () => {
+    if (!consultationDetail) {
+      alert('相談データが読み込まれていません。しばらく待ってから再度お試しください。');
+      return;
+    }
+
+    setIsTeamsSending(true);
+    
+    try {
+      // 送信メッセージを作成
+      const message = `
+【酒税法リスク判断支援システムからの相談】
+
+■ 相談タイトル
+${consultationDetail.title || '相談内容'}
+
+■ 相談内容要約
+${consultationDetail.summary_title || consultationDetail.initial_content || question}
+
+■ 主要論点
+${consultationDetail.key_issues || '分析中...'}
+
+■ 提案質問
+${consultationDetail.suggested_questions && consultationDetail.suggested_questions.length > 0 
+  ? consultationDetail.suggested_questions.map((q, i) => `${i + 1}. ${q}`).join('\n')
+  : '質問生成中...'}
+
+■ 次のアクション
+${consultationDetail.action_items || 'アクション項目分析中...'}
+
+相談ID: ${consultationId}
+      `.trim();
+
+      const response = await fetch('/api/teams/send', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: message,
+          consultantName: '佐々木 昌平',
+          consultantDepartment: '品質保証部'
+        }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        alert('Teamsに正常に送信されました！');
+      } else {
+        alert(`送信に失敗しました: ${result.message}`);
+      }
+    } catch (error) {
+      console.error('Teams送信エラー:', error);
+      alert('送信中にエラーが発生しました。ネットワーク接続を確認してください。');
+    } finally {
+      setIsTeamsSending(false);
+    }
+  };
+  
   return (
     <div className="relative min-h-screen">
       {/* ← consult/layout.tsx で全画面ドット背景を敷いているので、ここでの背景指定は不要 */}
@@ -233,13 +295,14 @@ export default function SummaryPage() {
         {/* ▼ SVG( /TeamsIcon.svg ) を埋め込んだピル型ボタン */}
         {/* public/TeamsButton.svg をそのままボタンとして使う */}
             <button
-            onClick={() => alert('準備中です（Teams連絡）')}
-            className="p-0 border-0 bg-transparent cursor-pointer"
-            title="Teamsで連絡する"
+            onClick={handleTeamsSend}
+            disabled={isTeamsSending}
+            className="p-0 border-0 bg-transparent cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            title={isTeamsSending ? "送信中..." : "Teamsで連絡する"}
             >
             <img
                 src="/TeamsIcon.svg" // ← public直下に置いた完成デザインのSVG
-                alt="Teamsで連絡する"
+                alt={isTeamsSending ? "送信中..." : "Teamsで連絡する"}
                 className="h-[40px] w-auto" // 高さなど調整
             />
             </button>
