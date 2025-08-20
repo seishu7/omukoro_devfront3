@@ -68,8 +68,8 @@ export default function Page() {
       const formData = new FormData();
       formData.append('text', text);
       
-      // ローカルバックエンドのURLを使用
-      const apiUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
+      // APIのベースURL（環境変数から取得、フォールバックは本番環境のURL）
+      const apiUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://aps-omu-02.azurewebsites.net';
       const response = await fetch(`${apiUrl}/api/consultations/generate-suggestions`, {
         method: 'POST',
         body: formData,

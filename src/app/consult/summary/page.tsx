@@ -52,8 +52,12 @@ export default function SummaryPage() {
   // 相談IDを取得
   const consultationId = localStorage.getItem('consultation_id');
   
-  // APIのベースURL
-  const apiUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
+  // APIのベースURL（環境変数から取得、フォールバックは本番環境のURL）
+  const apiUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://aps-omu-02.azurewebsites.net';
+  
+  // 環境変数の読み込み確認用ログ
+  console.log('環境変数 NEXT_PUBLIC_API_BASE_URL:', process.env.NEXT_PUBLIC_API_BASE_URL);
+  console.log('使用するAPIのベースURL:', apiUrl);
   
   // カテゴリマッピングを取得
   useEffect(() => {
