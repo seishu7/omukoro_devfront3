@@ -36,10 +36,10 @@ jobs:
           NEXT_PUBLIC_API_ENDPOINT: ${{ secrets.NEXT_PUBLIC_API_ENDPOINT }}
 
           # Teams連携用
-          NEXT_PUBLIC_TEAMS_CHANNEL_ID: ${{ secrets.NEXT_PUBLIC_TEAMS_CHANNEL_ID }}
-          NEXT_PUBLIC_TEAMS_MENTION_USER_ID: ${{ secrets.NEXT_PUBLIC_TEAMS_MENTION_USER_ID }}
+          NEXT_PUBLIC_TEAMS_CHANNEL_ID: ${{ secrets.TEAMS_CHANNEL_ID }}
+          NEXT_PUBLIC_TEAMS_MENTION_USER_ID: ${{ secrets.TEAMS_MENTION_USER_ID }}
           MENTION_USER_NAME: ${{ secrets.MENTION_USER_NAME }}
-          NEXT_PUBLIC_TEAMS_TEAM_ID: ${{ secrets.NEXT_PUBLIC_TEAMS_TEAM_ID }}
+          NEXT_PUBLIC_TEAMS_TEAM_ID: ${{ secrets.TEAMS_TEAM_ID }}
 
           # Microsoft Graph API用
           GRAPH_REFRESH_TOKEN: ${{ secrets.GRAPH_REFRESH_TOKEN }}

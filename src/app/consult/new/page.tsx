@@ -69,7 +69,7 @@ export default function Page() {
       formData.append('text', text);
       
       // APIのベースURL（環境変数から取得、フォールバックは本番環境のURL）
-      const apiUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://aps-omu-02.azurewebsites.net';
+      const apiUrl = process.env.NEXT_PUBLIC_API_ENDPOINT || 'https://aps-omu-02.azurewebsites.net';
       const response = await fetch(`${apiUrl}/api/consultations/generate-suggestions`, {
         method: 'POST',
         body: formData,

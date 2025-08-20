@@ -89,7 +89,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Teams設定の検証
-    const teamId = process.env.NEXT_PUBLIC_TEAMS_TEAM_ID;
+    const teamId = process.env.TEAMS_TEAM_ID;
     if (!teamId) {
       return NextResponse.json(
         { 
@@ -102,8 +102,8 @@ export async function POST(req: NextRequest) {
     }
 
  // 相談先に応じたチャンネル・ユーザーの決定（本番では相談先マッピングテーブルを使用）
-    const targetChannelId = channelId || process.env.NEXT_PUBLIC_TEAMS_CHANNEL_ID || '19:example-channel-id@thread.tacv2';
-    const targetUserId = mentionUserId || process.env.NEXT_PUBLIC_TEAMS_MENTION_USER_ID || 'user@example.com';
+    const targetChannelId = channelId || process.env.TEAMS_CHANNEL_ID || '19:example-channel-id@thread.tacv2';
+    const targetUserId = mentionUserId || process.env.TEAMS_MENTION_USER_ID || 'user@example.com';
 
     // メンション付きメッセージの作成
     const messageBody = {
