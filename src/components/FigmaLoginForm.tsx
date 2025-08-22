@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import Image from 'next/image';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface FormData {
@@ -23,7 +24,7 @@ export default function FigmaLoginForm() {
   const [errors, setErrors] = useState<ValidationErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const isFormValid = formData.email.trim() !== '' && formData.password !== '';
+
 
   const validateForm = (): ValidationErrors => {
     const newErrors: ValidationErrors = {};
@@ -74,7 +75,7 @@ export default function FigmaLoginForm() {
 
     try {
       await login(formData.email, formData.password);
-    } catch (error) {
+    } catch {
       setErrors({
         general: 'メールアドレス・パスワードのどちらかが間違っています',
       });
@@ -141,7 +142,7 @@ export default function FigmaLoginForm() {
             style={{ lineHeight: 0 }}
           >
             {/* ※ public 直下のファイルは先頭スラッシュで参照。/public は付けない */}
-            <img
+            <Image
               src="/LoginButton.svg"
               alt=""
               width={180}   // ← お好みで調整（Figmaの実寸に合わせる）

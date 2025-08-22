@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import Image from 'next/image';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 
@@ -86,9 +87,11 @@ export default function FigmaLoginForm() {
                       focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70
                       active:opacity-95 disabled:opacity-60"
           >
-            <img
+            <Image
               src="/LoginButton.svg"
               alt=""            // 役割は aria-label で伝えるので空に
+              width={40}
+              height={40}
               className="h-[40px] w-auto select-none pointer-events-none"
             />
           </button>

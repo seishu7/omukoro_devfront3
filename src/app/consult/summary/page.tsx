@@ -68,10 +68,10 @@ useEffect(() => {
   // 例: 相談担当のIDをどこかから取得（必要に応じて置換）
   const consultantId = 'sasaki_shohei';
 
-  const fetchAdvisorBadges = async (id: string) => {
+  const fetchAdvisorBadges = async () => {
     try {
       // TODO: 実APIに差し替え
-      // const res = await fetch(`${apiUrl}/api/consultants/${id}/badges`);
+      // const res = await fetch(`${apiUrl}/api/consultants/${consultantId}/badges`);
       // const data: AdvisorBadges = await res.json();
 
       // フォールバック（API未実装でもUI検証可）
@@ -88,8 +88,8 @@ useEffect(() => {
     }
   };
 
-  fetchAdvisorBadges(consultantId);
-}, [/* apiUrl を依存に入れるならここへ */]);
+  fetchAdvisorBadges();
+}, []);
   
   // 相談IDを取得
   const consultationId = localStorage.getItem('consultation_id');
@@ -179,7 +179,7 @@ useEffect(() => {
     };
     
     fetchCategoryMappings();
-  }, []);
+  }, [apiUrl]);
 
 // consult のおむすびカウンターを読む（置き換え）
 useEffect(() => {
@@ -271,7 +271,7 @@ useEffect(() => {
       
       return () => clearTimeout(timer);
     }
-  }, [consultationId]);
+  }, [consultationId, apiUrl]);
   
   // Teams送信処理
   const handleTeamsSend = async () => {
@@ -395,7 +395,7 @@ ${consultationDetail.action_items || 'アクション項目分析中...'}
             className="p-0 border-0 bg-transparent cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             title={isTeamsSending ? '送信中...' : 'Teamsで連絡する'}
           >
-            <img src="/TeamsIcon.svg" alt="Teamsで連絡する" className="h-[40px] w-auto" />
+            <Image src="/TeamsIcon.svg" alt="Teamsで連絡する" width={40} height={40} className="h-[40px] w-auto" />
           </button>
           <button
             className="px-4 py-2 text-xs rounded-md bg-white/10 border border-white/20"
@@ -574,7 +574,7 @@ ${consultationDetail.action_items || 'アクション項目分析中...'}
           {/* 類似相談案件 */}
           <div className="mb-6">
             <div className="flex items-center gap-2 mb-1">
-              <img src="/Omusubi2.svg" alt="" width={20} height={20} />
+              <Image src="/Omusubi2.svg" alt="" width={20} height={20} />
               <h3 className="text-sm text-gray-500">類似相談案件</h3>
             </div>
             <div className="rounded-lg border border-gray-200 p-4 text-sm text-gray-700 space-y-2">

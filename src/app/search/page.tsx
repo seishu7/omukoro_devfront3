@@ -1,6 +1,7 @@
 'use client';
 
 // src/app/search/page.tsx
+import Image from 'next/image';
 import AppHeader from '@/components/AppHeader';
 import { CategoryDropdown } from '@/components/CategoryDropdown';
 import { SearchDropdown } from '@/components/SearchDropdown';
@@ -73,7 +74,7 @@ export default function SearchPage() {
               className="flex items-center justify-center w-12 h-12 rounded-full bg-[#FF5A23] hover:opacity-90 active:opacity-80 disabled:opacity-50 transition-opacity"
               aria-label="検索"
             >
-              <img src="/SearchButton.svg" alt="検索" width={50} height={50} />
+              <Image src="/SearchButton.svg" alt="検索" width={50} height={50} />
             </button>
           </div>
         </section>

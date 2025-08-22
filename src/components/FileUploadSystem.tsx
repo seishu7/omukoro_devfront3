@@ -46,7 +46,7 @@ const FileUploadSystem: React.FC<FileUploadSystemProps> = ({ className = '' }) =
     return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
   };
 
-  const validateFile = (file: File): string | null => {
+  const validateFile = useCallback((file: File): string | null => {
     // ファイル形式チェック
     const isValidType = Object.keys(ALLOWED_TYPES).includes(file.type) ||
       Object.values(ALLOWED_TYPES).flat().some(ext => file.name.toLowerCase().endsWith(ext));
@@ -66,7 +66,7 @@ const FileUploadSystem: React.FC<FileUploadSystemProps> = ({ className = '' }) =
     }
 
     return null;
-  };
+  }, [files]);
 
   const addFiles = useCallback((newFiles: FileList) => {
     const fileArray = Array.from(newFiles);

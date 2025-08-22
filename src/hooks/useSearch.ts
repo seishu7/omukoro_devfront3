@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { SearchResponse, SearchParams, SearchFilters, SortOrder } from '@/types/search';
+import { SearchResponse, SearchFilters, SortOrder } from '@/types/search';
 
 interface UseSearchReturn {
   // 状態

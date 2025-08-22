@@ -8,9 +8,9 @@ export interface ConsultationSearchResult {
   information_sufficiency_level: number;
   key_issues?: string[];
   suggested_questions?: string[];
-  relevant_regulations?: Array<{[key: string]: any}>;
+  relevant_regulations?: Array<{[key: string]: string | number | boolean}>;
   action_items?: string[];
-  detected_terms?: Array<{[key: string]: any}>;
+  detected_terms?: Array<{[key: string]: string | number | boolean}>;
   created_at: string;
   updated_at: string;
   user_name?: string;

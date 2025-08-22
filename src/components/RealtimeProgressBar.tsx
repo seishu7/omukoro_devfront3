@@ -31,14 +31,12 @@ const defaultLabelByLevel: Record<CompletenessLevel, string> = {
 
 export function RealtimeProgressBar({ level, className = '', withLabel = true, labels,}: RealtimeProgressBarProps) {
   const segments = [1, 2, 3, 4, 5] as const;
-  const activeColor = colorByLevel[level];
   const labelText = (labels?.[level] ?? defaultLabelByLevel[level]) || '';
   return (
     <div className={`flex items-center gap-2 ${className}`} aria-label="情報の充足度">
       <div className="flex items-center gap-2">
       {segments.map((seg) => {
         const isActive = seg <= level;
-        const isCurrent = seg === level;
         return (
           <CompletenessIcon
             key={seg}
