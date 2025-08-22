@@ -36,6 +36,7 @@ interface ConsultationDetail {
   key_issues?: string;
   suggested_questions?: string[];
   action_items?: string;
+  omusubi_score?: number;
   relevant_regulations?: Regulation[];
 }
 
@@ -183,7 +184,7 @@ useEffect(() => {
 // consult のおむすびカウンターを読む（置き換え）
 useEffect(() => {
   // API で来たら最優先
-  const fromDetail = (consultationDetail as any)?.omusubi_score;
+  const fromDetail = consultationDetail?.omusubi_score;
   if (typeof fromDetail === 'number') {
     setOmusubiCount(Math.max(0, Math.min(5, Math.floor(fromDetail))));
     return;
