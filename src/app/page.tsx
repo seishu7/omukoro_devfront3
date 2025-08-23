@@ -4,7 +4,6 @@ import React, { useState } from 'react';
 import Image from 'next/image';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
-import Image from 'next/image';
 import LoadingModal from '@/components/LoadingModal';
 
 
@@ -106,16 +105,12 @@ export default function FigmaLoginForm() {
           >
             <Image
               src="/LoginButton.svg"
-<<<<<<< HEAD
-              alt=""            // 役割は aria-label で伝えるので空に
-              width={40}
-              height={40}
-=======
+
               alt=""
               height={40}
               width={160}
               priority
->>>>>>> aa7a2e2 (ログイン中表示追加)
+
               className="h-[40px] w-auto select-none pointer-events-none"
             />
           </button>
