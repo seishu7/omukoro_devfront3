@@ -180,7 +180,8 @@ export default function Page() {
         </button>
         
       </div>
-      <LoadingModal open={submitting} />
+      <LoadingModal open={submitting} label="解析中…" />
+
     </div>
   );
 }
