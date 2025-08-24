@@ -109,15 +109,15 @@ export async function POST(req: NextRequest) {
     const messageBody = {
       body: {
         contentType: 'html',
-        content: `<at id="0">${targetUserId}</at><br/><br/>${message.replace(/\n/g, '<br/>')}`
+        content: `<at id="0">omusubikororin</at><br/><br/>${message.replace(/\n/g, '<br/>')}`
       },
       mentions: [
         {
           id: 0,
-          mentionText: targetUserId,
+          mentionText: 'omusubikororin',
           mentioned: {
             user: {
-              displayName: targetUserId,
+              displayName: 'omusubikororin',
               id: targetUserId,
               userIdentityType: 'aadUser'
             }

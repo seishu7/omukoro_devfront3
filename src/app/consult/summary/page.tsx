@@ -78,6 +78,7 @@ function BubbleSvg({ className }: { className?: string }) {
 
 function OmusubiIcon({
   active,
+
   color,               // 追加: 有効時の色
   className = '',
 }: {
@@ -86,12 +87,15 @@ function OmusubiIcon({
   className?: string;
 }) {
   const inactive = '#D1D5DB'; // gray-300 相当
+
   return (
     <svg
       viewBox="0 0 24 22"
       aria-hidden
+
       className={className}
       style={{ color: active ? color : inactive }} // ← ここで色を渡す
+
       fill="currentColor"
     >
       <path d="M7.45 2.45C10 -0.82 14.99 -0.82 17.55 2.45c.24.31.52.79 1.1 1.77l4.34 7.36c.58.98.86 1.46 1.02 1.84 1.62 3.8-.9 8.06-5.04 8.56-.39.05-.96.05-2.1.05H8.16c-1.14 0-1.71 0-2.11-.05-4.16-.5-6.66-4.76-5.04-8.56.16-.38.44-.86 1.02-1.84L6.37 4.22c.58-.98.86-1.46 1.08-1.77Z" />
@@ -99,16 +103,17 @@ function OmusubiIcon({
   );
 }
 
+
 function OmusubiMeter({ count = 0, color = '#959595' }: { count: number; color?: string }) {
+
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-2" style={{ color }}>
       {Array.from({ length: 5 }).map((_, i) => (
         <OmusubiIcon key={i} active={i < count} color={color} className="h-5 w-5" />
       ))}
     </div>
   );
 }
-
 
 
 
@@ -125,6 +130,7 @@ export default function SummaryPage() {
   const [categoryMappings, setCategoryMappings] = useState<{ industry: Record<string, string>; alcohol: Record<string, string>; }>({ industry: {}, alcohol: {} });
   const [isTeamsSending, setIsTeamsSending] = useState(false);
   const [omusubiCount, setOmusubiCount] = useState<number>(0);
+
   
   const omusubiColor = useMemo(() => {
     const map: Record<number, string> = {
@@ -136,7 +142,7 @@ export default function SummaryPage() {
     };
     return map[omusubiCount] ?? '#959595';
   }, [omusubiCount]);
-  
+
 
   // Badges（ダミー）
   const [advisorBadges, setAdvisorBadges] = useState<AdvisorBadges>({});
@@ -222,6 +228,7 @@ export default function SummaryPage() {
       const stored = localStorage.getItem('consult_omusubi');
       if (stored) {
         const n = parseInt(stored, 10);
+
         if (!Number.isNaN(n)) {
           setOmusubiCount(Math.max(0, Math.min(5, n)));
         }
@@ -231,6 +238,7 @@ export default function SummaryPage() {
     }
   }, [consultationDetail]);
   
+
 
   /* ========= 相談詳細の取得（localStorage → API 02 → API 01 で補完） ========= */
   useEffect(() => {
