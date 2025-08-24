@@ -44,8 +44,11 @@ export interface SimilarCasesRequest {
 export class SimilarCasesApiClient {
   private baseUrl: string;
 
-  constructor(baseUrl: string = 'http://localhost:8000') {
-    this.baseUrl = baseUrl;
+  constructor(baseUrl?: string) {
+    // 環境変数またはデフォルトのAPIエンドポイントを使用
+    this.baseUrl = baseUrl || 
+      process.env.NEXT_PUBLIC_API_ENDPOINT || 
+      'https://aps-omu-02.azurewebsites.net';
   }
 
   /**

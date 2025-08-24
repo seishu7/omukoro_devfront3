@@ -2,6 +2,7 @@
 
 // src/app/search/page.tsx
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import AppHeader from '@/components/AppHeader';
 import { CategoryDropdown } from '@/components/CategoryDropdown';
 import { SearchDropdown } from '@/components/SearchDropdown';
@@ -10,6 +11,7 @@ import { useSearch } from '@/hooks/useSearch';
 import { SortOrder } from '@/types/search';
 
 export default function SearchPage() {
+  const router = useRouter();
   const {
     searchResults,
     loading,
@@ -31,8 +33,8 @@ export default function SearchPage() {
   ];
 
   const handleConsultationClick = (consultationId: string) => {
-    // 詳細ページへの遷移処理（将来実装）
-    console.log('相談詳細:', consultationId);
+    // 詳細ページへの遷移処理
+    router.push(`/consultation/${consultationId}`);
   };
 
   return (
@@ -83,7 +85,7 @@ export default function SearchPage() {
         <section className="mt-4 flex justify-between items-center">
           <div>
             {searchResults && (
-              <p className="text-sm text-gray-600">
+              <p className="text-lg text-white">
                 {searchResults.total_count}件の結果
               </p>
             )}
