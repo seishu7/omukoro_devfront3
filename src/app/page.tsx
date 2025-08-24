@@ -1,18 +1,23 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import LoadingModal from '@/components/LoadingModal';
-
 
 export default function FigmaLoginForm() {
   const { login, isLoading } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [mounted, setMounted] = useState(false); // ← 初回描画後フラグ
   const router = useRouter();
+
+  useEffect(() => {
+    // 初回マウント完了後に true（SSR/ハイドレーションの瞬間にモーダルが出ないように）
+    setMounted(true);
+  }, []);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -22,6 +27,7 @@ export default function FigmaLoginForm() {
     }
 
     setIsLoggingIn(true);
+
     // consult/new 側で初回だけモーダル出すフラグ
     try {
       sessionStorage.setItem('show_consult_loading', '1');
@@ -29,27 +35,25 @@ export default function FigmaLoginForm() {
 
     try {
       await login(email, password);
-      // 状態が描画に反映される時間を1フレーム確保（モーダルが確実に出るように）
+      // 1フレーム確保（遷移先でのモーダル描画を安定化）
       await new Promise((r) => setTimeout(r, 120));
       router.push('/consult/new');
     } catch (err) {
       console.error('ログイン失敗:', err);
       setIsLoggingIn(false);
-      try {
-        sessionStorage.removeItem('show_consult_loading');
-      } catch {}
+      try { sessionStorage.removeItem('show_consult_loading'); } catch {}
     }
   }
 
   const disabled = isLoading || isLoggingIn;
 
   return (
-    <div className="relative min-h-screen flex justify-center items-start
-                    pt-[8vh] sm:pt-[10vh] md:pt-[12vh] lg:pt-[14vh] overflow-hidden">
-
-      <LoadingModal open={isLoggingIn || isLoading} label="ログイン中…" />
-
-
+    <div
+      className="relative min-h-screen flex justify-center items-start
+                 pt-[8vh] sm:pt-[10vh] md:pt-[12vh] lg:pt-[14vh] overflow-hidden"
+    >
+      {/* ★ 初回表示では出さない／ログイン処理中のみ表示 */}
+      {mounted && isLoggingIn && <LoadingModal open label="ログイン中…" />}
 
       {/* 背景レイヤー */}
       <div
@@ -58,6 +62,7 @@ export default function FigmaLoginForm() {
                    [background-image:radial-gradient(rgba(255,255,255,.12)_1.2px,transparent_1.2px)]
                    [background-size:22px_22px]"
       />
+
       <div className="w-full max-w-md sm:max-w-lg px-6">
         {/* タイトル */}
         <h1
@@ -105,12 +110,10 @@ export default function FigmaLoginForm() {
           >
             <Image
               src="/LoginButton.svg"
-
               alt=""
               height={40}
               width={160}
               priority
-
               className="h-[40px] w-auto select-none pointer-events-none"
             />
           </button>
