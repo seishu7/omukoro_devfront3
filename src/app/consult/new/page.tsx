@@ -29,6 +29,23 @@ export default function Page() {
     removeFile 
   } = useRealtimeAnalysis();
   const level: CompletenessLevel = analysis?.completeness ?? 1;
+  // 既にある level 定義のすぐ下あたりに追加
+useEffect(() => {
+  const n = Math.max(0, Math.min(5, Math.round(Number(level))));
+  const map: Record<number, string> = {
+    1: '#959595',
+    2: '#959595',
+    3: '#C6AA0E',
+    4: '#FF753E',
+    5: '#16C47F',
+  };
+  const color = map[n] || '#959595';
+  try {
+    localStorage.setItem('consult_omusubi', String(n));
+    localStorage.setItem('consult_omusubi_color', color);
+  } catch {}
+}, [level]);
+
   const suggestions = analysis?.suggestions ?? [];
   const showProgress = text.trim().length > 0 && !isLoading && !isFileUploading && !!analysis;
   const router = useRouter();
