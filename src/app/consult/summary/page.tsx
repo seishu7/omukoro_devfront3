@@ -4,6 +4,8 @@ import { useRouter } from 'next/navigation';
 import { loadConsultDraft } from '@/components/ConsultDraft';
 import { useEffect, useState } from 'react';
 import Image from "next/image";
+import SimilarCasesDisplay from '@/components/SimilarCasesDisplay';
+import { useSimilarCases } from '@/hooks/useSimilarCases';
 
 // 型定義
 interface CategoryItem {
@@ -59,6 +61,9 @@ export default function SummaryPage() {
   }>({ industry: {}, alcohol: {} });
   const [isTeamsSending, setIsTeamsSending] = useState(false);
   const [omusubiCount, setOmusubiCount] = useState<number>(0);
+  
+  // 類似相談案件の取得
+  const { data: similarCasesData, isLoading: isLoadingSimilarCases, error: similarCasesError, fetchByCategoryAndTitle } = useSimilarCases();
 
   // 吹き出し文言
 const [advisorBadges, setAdvisorBadges] = useState<AdvisorBadges>({});
@@ -272,6 +277,17 @@ useEffect(() => {
       return () => clearTimeout(timer);
     }
   }, [consultationId, apiUrl]);
+  
+  // 類似相談案件の取得
+  useEffect(() => {
+    if (consultationDetail?.industry_category_id && consultationDetail?.summary_title) {
+      fetchByCategoryAndTitle(
+        consultationDetail.industry_category_id,
+        consultationDetail.summary_title,
+        2
+      );
+    }
+  }, [consultationDetail, fetchByCategoryAndTitle]);
   
   // Teams送信処理
   const handleTeamsSend = async () => {
@@ -572,16 +588,15 @@ ${consultationDetail.action_items || 'アクション項目分析中...'}
            */}
 
           {/* 類似相談案件 */}
-          <div className="mb-6">
-            <div className="flex items-center gap-2 mb-1">
-              <Image src="/Omusubi2.svg" alt="" width={20} height={20} />
-              <h3 className="text-sm text-gray-500">類似相談案件</h3>
-            </div>
-            <div className="rounded-lg border border-gray-200 p-4 text-sm text-gray-700 space-y-2">
-              <p>過去の相談：「酒税法に関する納税猶予申請について」</p>
-              <p>過去の相談：「特定酒類の分類基準に関する照会」</p>
-            </div>
-          </div>
+          <SimilarCasesDisplay
+            similarCases={similarCasesData?.similar_cases || []}
+            isLoading={isLoadingSimilarCases}
+            error={similarCasesError}
+            totalCandidates={similarCasesData?.total_candidates || 0}
+            message={similarCasesData?.message || ''}
+            className="mb-6"
+            categoryMappings={categoryMappings}
+          />
 
           {/* アクション列 */}
           <div className="flex flex-col sm:flex-row gap-3 sm:justify-between">
