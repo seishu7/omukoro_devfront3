@@ -80,6 +80,10 @@ useEffect(() => {
   
     try {
       saveConsultDraft(text);
+
+      try {
+        localStorage.setItem('consult_omusubi', String(level ?? 0));
+      } catch {}
       
       // 相談提案生成APIを呼び出し
       const formData = new FormData();
