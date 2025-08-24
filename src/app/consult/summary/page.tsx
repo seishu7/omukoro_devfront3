@@ -6,8 +6,6 @@ import Image from 'next/image';
 import { loadConsultDraft } from '@/components/ConsultDraft';
 import SimilarCasesDisplay from '@/components/SimilarCasesDisplay';
 import { useSimilarCases } from '@/hooks/useSimilarCases';
-import { useEffect, useMemo, useState } from 'react';
-import Image from 'next/image';
 
 /* ========= Types ========= */
 interface CategoryItem { category_id: string; category_name: string; }
@@ -40,6 +38,61 @@ interface AdvisorBadges {
   bottomRight?: string;
 }
 
+/* ========= Small UI parts ========= */
+function CornerPill({ children, color = 'orange', className = '' }: { children: React.ReactNode; color?: 'orange' | 'green'; className?: string; }) {
+  const bg = color === 'green' ? 'bg-[#12c06a]' : 'bg-[#ff5a3c]';
+  return (
+    <span className={['inline-flex items-center rounded-full', 'px-6 py-3 text-[14px] sm:text-[15px] font-bold text-white', 'shadow-md pointer-events-none z-20', bg, className].join(' ')}>
+      {children}
+    </span>
+  );
+}
+
+/* ===== SVGs（このファイル内だけで完結） ===== */
+function OnigiriSvg({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 22" className={className} fill="currentColor" aria-hidden>
+      <path d="M7.45 2.45C10 -0.82 14.99 -0.82 17.55 2.45c.24.31.52.79 1.1 1.77l4.34 7.36c.58.98.86 1.46 1.02 1.84 1.62 3.8-.9 8.06-5.04 8.56-.39.05-.96.05-2.1.05H8.16c-1.14 0-1.71 0-2.11-.05-4.16-.5-6.66-4.76-5.04-8.56.16-.38.44-.86 1.02-1.84L6.37 4.22c.58-.98.86-1.46 1.08-1.77Z" />
+      <circle cx="12" cy="13" r="2.6" fill="#ffffff" />
+    </svg>
+  );
+}
+
+function OmusubiSvg({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 22" className={className} fill="currentColor" aria-hidden>
+      <path d="M7.45 2.45C10 -0.82 14.99 -0.82 17.55 2.45c.24.31.52.79 1.1 1.77l4.34 7.36c.58.98.86 1.46 1.02 1.84 1.62 3.8-.9 8.06-5.04 8.56-.39.05-.96.05-2.1.05H8.16c-1.14 0-1.71 0-2.11-.05-4.16-.5-6.66-4.76-5.04-8.56.16-.38.44-.86 1.02-1.84L6.37 4.22c.58-.98.86-1.46 1.08-1.77Z" />
+      <circle cx="12" cy="13" r="2.6" fill="#ffffff" />
+    </svg>
+  );
+}
+
+function BubbleSvg({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} aria-hidden>
+      <path d="M5 6a3 3 0 0 1 3-3h8a3 3 0 0 1 3 3v7a3 3 0 0 1-3 3H11l-3.8 3.1c-.7.57-1.7.06-1.7-.83V16A3 3 0 0 1 5 13V6Z" fill="currentColor" />
+    </svg>
+  );
+}
+
+function OmusubiIcon({ active, className = '' }: { active: boolean; className?: string }) {
+  return (
+    <svg viewBox="0 0 24 22" aria-hidden className={className + ' ' + (active ? 'text-gray-800' : 'text-gray-300')} fill="currentColor">
+      <path d="M7.45 2.45C10 -0.82 14.99 -0.82 17.55 2.45c.24.31.52.79 1.1 1.77l4.34 7.36c.58.98.86 1.46 1.02 1.84 1.62 3.8-.9 8.06-5.04 8.56-.39.05-.96.05-2.1.05H8.16c-1.14 0-1.71 0-2.11-.05-4.16-.5-6.66-4.76-5.04-8.56.16-.38.44-.86 1.02-1.84L6.37 4.22c.58-.98.86-1.46 1.08-1.77Z" />
+    </svg>
+  );
+}
+
+function OmusubiMeter({ count = 0 }: { count: number }) {
+  return (
+    <div className="flex items-center gap-2">
+      {Array.from({ length: 5 }).map((_, i) => (
+        <OmusubiIcon key={i} active={i < count} className="h-5 w-5" />
+      ))}
+    </div>
+  );
+}
+
 export default function SummaryPage() {
   const router = useRouter();
   const params = useParams<{ id: string }>();
@@ -49,43 +102,6 @@ export default function SummaryPage() {
   // 類似相談案件の取得
   const { data: similarCasesData, isLoading: isLoadingSimilarCases, error: similarCasesError, fetchByCategoryAndTitle } = useSimilarCases();
   
-  // 業種カテゴリと酒類タイプのマッピング
-  const categoryMappings = {
-    industry: {
-      'cat_001': '製造業',
-      'cat_002': '卸売業',
-      'cat_003': '小売業',
-      'cat_004': 'サービス業',
-      'cat_005': 'その他'
-    },
-    alcohol: {
-      'alc_001': '清酒',
-      'alc_002': '焼酎',
-      'alc_003': 'ウイスキー',
-      'alc_004': 'ワイン',
-      'alc_005': 'ビール',
-      'alc_006': 'その他'
-    }
-  };
-
-  // 相談詳細の取得（ダミーデータ）
-  const consultationDetail = {
-    industry_category_id: 'cat_001',
-    summary_title: '酒税法に関する製造工程での副産物活用について'
-  };
-
-  // 類似相談案件の取得
-  useEffect(() => {
-    if (consultationDetail?.industry_category_id && consultationDetail?.summary_title) {
-      fetchByCategoryAndTitle(
-        consultationDetail.industry_category_id,
-        consultationDetail.summary_title,
-        2
-      );
-    }
-  }, [consultationDetail, fetchByCategoryAndTitle]);
-
-
   const [consultationDetail, setConsultationDetail] = useState<ConsultationDetail | null>(null);
   const [categoryMappings, setCategoryMappings] = useState<{ industry: Record<string, string>; alcohol: Record<string, string>; }>({ industry: {}, alcohol: {} });
   const [isTeamsSending, setIsTeamsSending] = useState(false);
@@ -228,11 +244,22 @@ export default function SummaryPage() {
     return () => clearTimeout(timer);
   }, [consultationId, api02, api01]);
 
+  // 類似相談案件の取得
+  useEffect(() => {
+    if (consultationDetail?.industry_category_id && consultationDetail?.summary_title) {
+      fetchByCategoryAndTitle(
+        consultationDetail.industry_category_id,
+        consultationDetail.summary_title,
+        2
+      );
+    }
+  }, [consultationDetail, fetchByCategoryAndTitle]);
+
   /* ========= 推薦アドバイザーの表示準備 ========= */
   const advisor = consultationDetail?.recommended_advisor ?? null;
   const advisorPhotoSrc = useMemo(() => {
     const uid = advisor?.user_id;
-    return uid ? `/advisors/${uid}.png` : '/advisors/_placeholder.png';
+    return uid ? `/advisors/${uid}.png` : '/advisors/noavatar.png';
   }, [advisor?.user_id]);
 
   /* ========= Teams 送信 ========= */
@@ -301,34 +328,6 @@ ${consultationDetail.action_items || 'アクション項目分析中...'}
           </span>
         </div>
 
-        {/* 顔カード風ヘッダー */}
-        <div className="rounded-3xl bg-gradient-to-b from-[#2b2b2b] to-[#1f1f1f] text-white p-6 shadow-lg flex items-center gap-4">
-          <div className="h-14 w-14 rounded-full overflow-hidden shrink-0 bg-white/10" />
-          <div className="flex-1">
-            <div className="text-xs text-white/70">品質保証部</div>
-            <div className="text-xl font-semibold">佐々木 昌平 さん</div>
-            <div className="mt-2 flex gap-2">
-        {/* ▼ SVG( /TeamsIcon.svg ) を埋め込んだピル型ボタン */}
-        {/* public/TeamsButton.svg をそのままボタンとして使う */}
-            <button
-            onClick={() => alert('準備中です（Teams連絡）')}
-            className="p-0 border-0 bg-transparent cursor-pointer"
-            title="Teamsで連絡する"
-            >
-            <img
-                src="/TeamsIcon.svg" // ← public直下に置いた完成デザインのSVG
-                alt="Teamsで連絡する"
-                className="h-[40px] w-auto" // 高さなど調整
-            />
-            </button>
-
-        {/* 既存のメールボタンはそのまま */}
-        <button
-            className="px-3 py-1.5 text-xs rounded-md bg-white/10 border border-white/20"
-            onClick={() => alert('準備中です（メール連絡）')}
-        >
-            メールで連絡する
-        </button>
         {/* 顔カード */}
         <div className="mx-auto max-w-[960px] px-4 py-6 sm:py-10">
           <div className="relative w-full rounded-[32px] sm:rounded-[40px] text-white px-6 sm:px-10 pt-8 pb-14 shadow-[0_18px_40px_rgba(0,0,0,0.28)] bg-[radial-gradient(120%_120%_at_20%_0%,#3a3a3a,transparent_60%),linear-gradient(to_bottom,#2b2b2b,#1f1f1f)]">
@@ -373,13 +372,13 @@ ${consultationDetail.action_items || 'アクション項目分析中...'}
               </div>
             </div>
           </div>
-
         </div>
 
+        {/* 本文カード */}
+        <div className="mt-6 rounded-xl bg-white shadow p-6">
+          <h2 className="text-lg font-bold mb-2">打ち込んだ内容の要約</h2>
+          <p className="text-sm text-gray-600 mb-4">相談ID: {params.id}</p>
 
-          </div>
-          <div className="hidden sm:block">
-            <span className="inline-block px-3 py-1 text-xs rounded-full bg-emerald-500 text-white">フレンドリー</span>
           {/* タイトル */}
           <div className="mb-6">
             <div className="flex items-center gap-2 mb-1">
@@ -425,14 +424,7 @@ ${consultationDetail.action_items || 'アクション項目分析中...'}
                 </p>
               </div>
             </div>
-
           </div>
-        </div>
-
-        {/* 本文カード */}
-        <div className="mt-6 rounded-xl bg-white shadow p-6">
-          <h2 className="text-lg font-bold mb-2">打ち込んだ内容の要約</h2>
-          <p className="text-sm text-gray-600 mb-4">相談ID: {params.id}</p>
 
           {/* 相談内容（AI要約） */}
           <div className="mb-6">
@@ -452,8 +444,18 @@ ${consultationDetail.action_items || 'アクション項目分析中...'}
               <h3 className="text-sm text-gray-500">質問事項</h3>
             </div>
             <div className="rounded-lg border border-gray-200 p-4 leading-7 text-gray-800">
-              {/* TODO: AIによる質問生成結果をリストで表示 */}
-              ここにAIが生成した質問が入ります。
+              {consultationDetail?.suggested_questions?.length ? (
+                <ul className="space-y-2">
+                  {consultationDetail.suggested_questions.map((q, i) => (
+                    <li key={i} className="flex items-start gap-2">
+                      <span className="text-blue-600 font-medium">{i + 1}.</span>
+                      <span>{q}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-gray-500">データを取得できていません。AIによる質問生成が完了していない可能性があります。</p>
+              )}
             </div>
           </div>
 
@@ -475,21 +477,6 @@ ${consultationDetail.action_items || 'アクション項目分析中...'}
             className="mb-6"
             categoryMappings={categoryMappings}
           />
-            <div className="rounded-lg border border-gray-200 p-4 leading-7 text-gray-800">
-              {consultationDetail?.suggested_questions?.length ? (
-                <ul className="space-y-2">
-                  {consultationDetail.suggested_questions.map((q, i) => (
-                    <li key={i} className="flex items-start gap-2">
-                      <span className="text-blue-600 font-medium">{i + 1}.</span>
-                      <span>{q}</span>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="text-gray-500">データを取得できていません。AIによる質問生成が完了していない可能性があります。</p>
-              )}
-            </div>
-          </div>
 
           {/* 質問本文（折りたたみ） */}
           <section className="mb-10">
@@ -503,18 +490,6 @@ ${consultationDetail.action_items || 'アクション項目分析中...'}
               </div>
             </details>
           </section>
-
-          {/* 類似相談（ダミー） */}
-          <div className="mb-6">
-            <div className="flex items-center gap-2 mb-1">
-              <Image src="/Omusubi2.svg" alt="" width={20} height={20} />
-              <h3 className="text-sm text-gray-500">類似相談案件</h3>
-            </div>
-            <div className="rounded-lg border border-gray-200 p-4 text-sm text-gray-700 space-y-2">
-              <p>過去の相談：「酒税法に関する納税猶予申請について」</p>
-              <p>過去の相談：「特定酒類の分類基準に関する照会」</p>
-            </div>
-          </div>
 
           {/* アクション列 */}
           <div className="flex flex-col sm:flex-row gap-3 sm:justify-between">
@@ -535,49 +510,6 @@ ${consultationDetail.action_items || 'アクション項目分析中...'}
           </div>
         </div>
       </div>
-    </div>
-  );
-}
-
-/* ===== SVGs（このファイル内だけで完結） ===== */
-function OnigiriSvg({ className }: { className?: string }) {
-/* ========= Small UI parts ========= */
-function CornerPill({ children, color = 'orange', className = '' }: { children: React.ReactNode; color?: 'orange' | 'green'; className?: string; }) {
-  const bg = color === 'green' ? 'bg-[#12c06a]' : 'bg-[#ff5a3c]';
-  return (
-    <span className={['inline-flex items-center rounded-full', 'px-6 py-3 text-[14px] sm:text-[15px] font-bold text-white', 'shadow-md pointer-events-none z-20', bg, className].join(' ')}>
-      {children}
-    </span>
-  );
-}
-function OmusubiSvg({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 22" className={className} fill="currentColor" aria-hidden>
-      <path d="M7.45 2.45C10 -0.82 14.99 -0.82 17.55 2.45c.24.31.52.79 1.1 1.77l4.34 7.36c.58.98.86 1.46 1.02 1.84 1.62 3.8-.9 8.06-5.04 8.56-.39.05-.96.05-2.1.05H8.16c-1.14 0-1.71 0-2.11-.05-4.16-.5-6.66-4.76-5.04-8.56.16-.38.44-.86 1.02-1.84L6.37 4.22c.58-.98.86-1.46 1.08-1.77Z" />
-      <circle cx="12" cy="13" r="2.6" fill="#ffffff" />
-    </svg>
-  );
-}
-function BubbleSvg({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" className={className} aria-hidden>
-      <path d="M5 6a3 3 0 0 1 3-3h8a3 3 0 0 1 3 3v7a3 3 0 0 1-3 3H11l-3.8 3.1c-.7.57-1.7.06-1.7-.83V16A3 3 0 0 1 5 13V6Z" fill="currentColor" />
-    </svg>
-  );
-}
-function OmusubiIcon({ active, className = '' }: { active: boolean; className?: string }) {
-  return (
-    <svg viewBox="0 0 24 22" aria-hidden className={className + ' ' + (active ? 'text-gray-800' : 'text-gray-300')} fill="currentColor">
-      <path d="M7.45 2.45C10 -0.82 14.99 -0.82 17.55 2.45c.24.31.52.79 1.1 1.77l4.34 7.36c.58.98.86 1.46 1.02 1.84 1.62 3.8-.9 8.06-5.04 8.56-.39.05-.96.05-2.1.05H8.16c-1.14 0-1.71 0-2.11-.05-4.16-.5-6.66-4.76-5.04-8.56.16-.38.44-.86 1.02-1.84L6.37 4.22c.58-.98.86-1.46 1.08-1.77Z" />
-    </svg>
-  );
-}
-function OmusubiMeter({ count = 0 }: { count: number }) {
-  return (
-    <div className="flex items-center gap-2">
-      {Array.from({ length: 5 }).map((_, i) => (
-        <OmusubiIcon key={i} active={i < count} className="h-5 w-5" />
-      ))}
     </div>
   );
 }
