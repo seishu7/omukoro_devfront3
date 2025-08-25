@@ -168,25 +168,43 @@ export default function SummaryPage() {
   const api02 = process.env.NEXT_PUBLIC_API_ENDPOINT || 'https://aps-omu-02.azurewebsites.net';
   const api01 = 'https://aps-omu-01.azurewebsites.net';
 
-  type IssueQuestionPair = { issue: string; question: string };
+// 追加: 動的フィールドを型で表現
+type NumStr = '1' | '2' | '3';
+type PairKeys =
+  | `issue_question_pair_${NumStr}`
+  | `key_issue_${NumStr}`
+  | `suggested_question_${NumStr}`;
+
+// consultationDetail にこれらのキーが来る想定を足す
+type DetailWithPairs = ConsultationDetail & Partial<Record<PairKeys, string>>;
+
+// 追加: 型ガード
+const isNonEmptyString = (v: unknown): v is string =>
+  typeof v === 'string' && v.trim().length > 0;
+
+type IssueQuestionPair = { issue: string; question: string };
 
 const issueQuestionPairs: IssueQuestionPair[] = useMemo(() => {
-  const d = consultationDetail ?? {};
+  const d = (consultationDetail ?? {}) as DetailWithPairs;
   const pairs: IssueQuestionPair[] = [];
 
   const norm = (s: unknown) =>
     String(s ?? '')
       .replace(/\r/g, '')
-      .replace(/^[\s　]+|[\s　]+$/g, '')            // 前後全角/半角スペース
-      .replace(/^(\d+[\.\)]\s*)/, '')               // 先頭の「1. 」などを削除
-      .replace(/^論点[:：]\s*/,'')                  // ラベル消し
-      .replace(/^質問[:：]\s*/,'');
+      .replace(/^[\s　]+|[\s　]+$/g, '')   // 前後の全角/半角スペース
+      .replace(/^(\d+[\.\)]\s*)/, '')      // 先頭の「1. 」などを削除
+      .replace(/^論点[:：]\s*/, '')        // ラベル消し
+      .replace(/^質問[:：]\s*/, '');
 
-  const pushUnique = (issueRaw: unknown, questionRaw: unknown, seen: Set<string>) => {
+  const pushUnique = (
+    issueRaw: unknown,
+    questionRaw: unknown,
+    seen: Set<string>
+  ) => {
     const issue = norm(issueRaw);
     const question = norm(questionRaw);
     if (!issue && !question) return;
-    const key = `${issue}__${question}`;           // 重複キー
+    const key = `${issue}__${question}`;
     if (seen.has(key)) return;
     seen.add(key);
     pairs.push({ issue, question });
@@ -194,33 +212,32 @@ const issueQuestionPairs: IssueQuestionPair[] = useMemo(() => {
 
   const seen = new Set<string>();
 
-  // 1) まとめ済み（最優先）。1つでも見つかったら“これだけ”を返す
-  const packed: string[] = ['1','2','3']
-    .map(n => (d as any)?.[`issue_question_pair_${n}`])
-    .filter((x: any) => typeof x === 'string' && x.trim());
+  // 1) まとめ済み（最優先）
+  const packed = (['1', '2', '3'] as const)
+    .map((n) => d[`issue_question_pair_${n}`])
+    .filter(isNonEmptyString);
 
   if (packed.length > 0) {
-    packed.forEach(raw => {
-      // 期待形式： 「論点：... \n 質問：...」 だが頑健に分解
+    packed.forEach((raw) => {
+      // 期待形式「論点：...\n質問：...」を頑健に抽出
       const lines = String(raw).split(/\n+/);
-      const issueLine = lines.find(s => /論点[:：]/.test(s)) ?? '';
-      const questionLine = lines.find(s => /質問[:：]/.test(s)) ?? '';
+      const issueLine = lines.find((s) => /論点[:：]/.test(s)) ?? '';
+      const questionLine = lines.find((s) => /質問[:：]/.test(s)) ?? '';
       pushUnique(issueLine, questionLine, seen);
     });
-    return pairs;                                   // ← ここで終了（②は実行しない）
+    return pairs; // ここで終了（個別フィールドへは進まない）
   }
 
   // 2) 個別フィールドを同番号で結合（①が無いときだけ）
-  ['1','2','3'].forEach(n => {
-    const issue = (d as any)?.[`key_issue_${n}`];
-    const question = (d as any)?.[`suggested_question_${n}`];
+  (['1', '2', '3'] as const).forEach((n) => {
+    const issue = d[`key_issue_${n}`];
+    const question = d[`suggested_question_${n}`];
     pushUnique(issue, question, seen);
   });
 
   return pairs;
 }, [consultationDetail]);
 
-  
 
   /* ========= カテゴリ名マッピング（従来通り維持） ========= */
   useEffect(() => {
