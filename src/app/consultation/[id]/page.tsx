@@ -29,6 +29,16 @@ interface ConsultationDetail {
   omusubi_score?: number;
   relevant_regulations?: Regulation[];
   recommended_advisor?: Advisor;
+  //主要論点と質問のブロックを追加
+  key_issue_1?: string;
+  key_issue_2?: string;
+  key_issue_3?: string;
+  suggested_question_1?: string;
+  suggested_question_2?: string;
+  suggested_question_3?: string;
+  issue_question_pair_1?: string; 
+  issue_question_pair_2?: string;
+  issue_question_pair_3?: string;
 }
 
 /* ========= UI badges ========= */
@@ -66,19 +76,35 @@ function BubbleSvg({ className }: { className?: string }) {
   );
 }
 
-function OmusubiIcon({ active, className = '' }: { active: boolean; className?: string }) {
+function OmusubiIcon({
+  active,
+  color,               // 追加: 有効時の色
+  className = '',
+}: {
+  active: boolean;
+  color?: string;
+  className?: string;
+}) {
+  const inactive = '#D1D5DB'; // gray-300 相当
+
   return (
-    <svg viewBox="0 0 24 22" aria-hidden className={className + ' ' + (active ? 'text-gray-800' : 'text-gray-300')} fill="currentColor">
+    <svg
+      viewBox="0 0 24 22"
+      aria-hidden
+      className={className}
+      style={{ color: active ? color : inactive }} // ← ここで色を渡す
+      fill="currentColor"
+    >
       <path d="M7.45 2.45C10 -0.82 14.99 -0.82 17.55 2.45c.24.31.52.79 1.1 1.77l4.34 7.36c.58.98.86 1.46 1.02 1.84 1.62 3.8-.9 8.06-5.04 8.56-.39.05-.96.05-2.1.05H8.16c-1.14 0-1.71 0-2.11-.05-4.16-.5-6.66-4.76-5.04-8.56.16-.38.44-.86 1.02-1.84L6.37 4.22c.58-.98.86-1.46 1.08-1.77Z" />
     </svg>
   );
 }
 
-function OmusubiMeter({ count = 0 }: { count: number }) {
+function OmusubiMeter({ count = 0, color = '#959595' }: { count: number; color?: string }) {
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-2" style={{ color }}>
       {Array.from({ length: 5 }).map((_, i) => (
-        <OmusubiIcon key={i} active={i < count} className="h-5 w-5" />
+        <OmusubiIcon key={i} active={i < count} color={color} className="h-5 w-5" />
       ))}
     </div>
   );
@@ -96,6 +122,16 @@ export default function ConsultationDetailPage() {
   const [categoryMappings, setCategoryMappings] = useState<{ industry: Record<string, string>; alcohol: Record<string, string>; }>({ industry: {}, alcohol: {} });
   const [isTeamsSending, setIsTeamsSending] = useState(false);
   const [omusubiCount, setOmusubiCount] = useState<number>(0);
+  const omusubiColor = useMemo(() => {
+    const map: Record<number, string> = {
+      1: '#959595',
+      2: '#959595',
+      3: '#C6AA0E',
+      4: '#FF753E',
+      5: '#16C47F',
+    };
+    return map[omusubiCount] ?? '#959595';
+  }, [omusubiCount]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -112,6 +148,79 @@ export default function ConsultationDetailPage() {
   // API エンドポイント
   const api02 = process.env.NEXT_PUBLIC_API_ENDPOINT || 'https://aps-omu-02.azurewebsites.net';
   const api01 = 'https://aps-omu-01.azurewebsites.net';
+
+  // 追加: 動的フィールドを型で表現
+  type NumStr = '1' | '2' | '3';
+  type PairKeys =
+    | `issue_question_pair_${NumStr}`
+    | `key_issue_${NumStr}`
+    | `suggested_question_${NumStr}`;
+
+  // consultationDetail にこれらのキーが来る想定を足す
+  type DetailWithPairs = ConsultationDetail & Partial<Record<PairKeys, string>>;
+
+  // 追加: 型ガード
+  const isNonEmptyString = (v: unknown): v is string =>
+    typeof v === 'string' && v.trim().length > 0;
+
+  type IssueQuestionPair = { issue: string; question: string };
+
+  const issueQuestionPairs: IssueQuestionPair[] = useMemo(() => {
+    const d = (consultationDetail ?? {}) as DetailWithPairs;
+
+    const pairs: IssueQuestionPair[] = [];
+
+    const norm = (s: unknown) =>
+      String(s ?? '')
+        .replace(/\r/g, '')
+        .replace(/^[\s　]+|[\s　]+$/g, '')   // 前後の全角/半角スペース
+        .replace(/^(\d+[\.\)]\s*)/, '')      // 先頭の「1. 」などを削除
+        .replace(/^論点[:：]\s*/, '')        // ラベル消し
+        .replace(/^質問[:：]\s*/, '');
+
+    const pushUnique = (
+      issueRaw: unknown,
+      questionRaw: unknown,
+      seen: Set<string>
+    ) => {
+      const issue = norm(issueRaw);
+      const question = norm(questionRaw);
+      if (!issue && !question) return;
+      const key = `${issue}__${question}`;
+
+      if (seen.has(key)) return;
+      seen.add(key);
+      pairs.push({ issue, question });
+    };
+
+    const seen = new Set<string>();
+
+    // 1) まとめ済み（最優先）
+    const packed = (['1', '2', '3'] as const)
+      .map((n) => d[`issue_question_pair_${n}`])
+      .filter(isNonEmptyString);
+
+    if (packed.length > 0) {
+      packed.forEach((raw) => {
+        // 期待形式「論点：...\n質問：...」を頑健に抽出
+        const lines = String(raw).split(/\n+/);
+        const issueLine = lines.find((s) => /論点[:：]/.test(s)) ?? '';
+        const questionLine = lines.find((s) => /質問[:：]/.test(s)) ?? '';
+        pushUnique(issueLine, questionLine, seen);
+      });
+      return pairs; // ここで終了（個別フィールドへは進まない）
+    }
+
+    // 2) 個別フィールドを同番号で結合（①が無いときだけ）
+    (['1', '2', '3'] as const).forEach((n) => {
+      const issue = d[`key_issue_${n}`];
+      const question = d[`suggested_question_${n}`];
+
+      pushUnique(issue, question, seen);
+    });
+
+    return pairs;
+  }, [consultationDetail]);
 
   /* ========= カテゴリ名マッピング ========= */
   useEffect(() => {
@@ -239,25 +348,19 @@ export default function ConsultationDetailPage() {
     }
     setIsTeamsSending(true);
     try {
-      const message = `
-【酒税法リスク判断支援システムからの相談】
+              const message = `
+【Sherpathからの相談】
 
 ■ 相談タイトル
 ${consultationDetail.title || '相談内容'}
 
-■ 相談内容要約
-${consultationDetail.content || consultationDetail.summary_title || consultationDetail.initial_content || '内容なし'}
+■ 相談内容
+${consultationDetail.initial_content || '内容なし'}
 
-■ 主要論点
-${consultationDetail.key_issues || '分析中...'}
-
-■ 提案質問
+■ 質問
 ${consultationDetail.suggested_questions?.length
   ? consultationDetail.suggested_questions.map((q, i) => `${i + 1}. ${q}`).join('\n')
   : '質問生成中...'}
-
-■ 次のアクション
-${consultationDetail.action_items || 'アクション項目分析中...'}
 
 相談ID: ${consultationId}
       `.trim();
@@ -333,51 +436,7 @@ ${consultationDetail.action_items || 'アクション項目分析中...'}
           </span>
         </div>
 
-        {/* 顔カード */}
-        <div className="mx-auto max-w-[960px] px-4 py-6 sm:py-10">
-          <div className="relative w-full rounded-[32px] sm:rounded-[40px] text-white px-6 sm:px-10 pt-8 pb-14 shadow-[0_18px_40px_rgba(0,0,0,0.28)] bg-[radial-gradient(120%_120%_at_20%_0%,#3a3a3a,transparent_60%),linear-gradient(to_bottom,#2b2b2b,#1f1f1f)]">
-            {/* 角ピル（ダミー表示は維持） */}
-            {advisorBadges.topLeft && <CornerPill color="orange" className="absolute -top-6 -left-6">{advisorBadges.topLeft}</CornerPill>}
-            {advisorBadges.topRight && <CornerPill color="orange" className="absolute -top-6 -right-6">{advisorBadges.topRight}</CornerPill>}
-            {advisorBadges.bottomRight && <CornerPill color="green" className="absolute -bottom-6 -right-6">{advisorBadges.bottomRight}</CornerPill>}
 
-            <div className="flex flex-row items-center gap-6">
-              {/* 顔サムネ */}
-              <div className="h-[144px] w-[144px] rounded-[50%] overflow-hidden shrink-0 bg-white/10 ring-1 ring-white/10">
-                <Image
-                  src={advisorPhotoSrc}
-                  alt={advisor?.name ?? '担当者'}
-                  width={144}
-                  height={144}
-                  className="object-cover w-full h-full"
-                />
-              </div>
-              {/* 文字＋ボタン */}
-              <div className="flex-1 min-w-0">
-                <div className="text-xs text-white/70 mb-1">{advisor?.department ?? '所属不明'}</div>
-                <div className="text-[26px] sm:text-[30px] font-extrabold tracking-tight leading-tight whitespace-nowrap">
-                  {(advisor?.name ?? '担当者未設定') + ' さん'}
-                </div>
-                <div className="mt-4 flex flex-row items-center gap-3">
-                  <button
-                    onClick={handleTeamsSend}
-                    disabled={isTeamsSending}
-                    className="p-0 border-0 bg-transparent cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                    title={isTeamsSending ? '送信中...' : 'Teamsで連絡する'}
-                  >
-                    <Image src="/TeamsIcon.svg" alt="Teamsで連絡する" width={40} height={40} className="h-[40px] w-auto" />
-                  </button>
-                  <button
-                    className="px-4 py-2 text-xs rounded-md bg-white/10 border border-white/20"
-                    onClick={() => alert('準備中です（メール連絡）')}
-                  >
-                    メールで連絡する
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
 
         {/* 本文カード */}
         <div className="mt-6 rounded-xl bg-white shadow p-6">
@@ -398,7 +457,7 @@ ${consultationDetail.action_items || 'アクション項目分析中...'}
           <section className="mt-2 mb-10">
             <div className="flex items-center gap-3">
               <span className="text-sm text-gray-600">相談内容の充足度</span>
-              <OmusubiMeter count={omusubiCount} />
+              <OmusubiMeter count={omusubiCount} color={omusubiColor} />
             </div>
             <h3 className="mt-5 mb-2 text-[15px] font-semibold text-gray-700">相談内容の要約</h3>
             <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 text-[15px] leading-7 text-gray-800 whitespace-pre-wrap">
@@ -430,6 +489,38 @@ ${consultationDetail.action_items || 'アクション項目分析中...'}
               </div>
             </div>
           </div>
+
+          {/* ===== 主要論点 × 対応質問（1:1） ===== */}
+          {issueQuestionPairs.length > 0 && (
+            <section className="mb-8">
+              <div className="rounded-xl border border-gray-200 bg-white">
+                <div className="border-b border-gray-200 px-4 py-3">
+                  <h3 className="text-base font-semibold text-gray-700">こういう論点がありそう</h3>
+                </div>
+
+                <div className="px-4 py-4 space-y-8">
+                  {issueQuestionPairs.map((pair, idx) => (
+                    <div
+                      key={idx}
+                      className="space-y-3 border-b border-gray-100 pb-6 last:border-0 last:pb-0"
+                    >
+                      {/* 論点：黒太字 */}
+                      <p className="text-[15px] leading-7 font-bold text-gray-900">
+                        {pair.issue || '（論点データなし）'}
+                      </p>
+
+                      {/* 質問：先頭に Q. */}
+                      <div className="rounded-lg bg-gray-50 border border-gray-200 p-3">
+                        <p className="text-[15px] leading-7 text-gray-800 whitespace-pre-wrap">
+                          Q. {pair.question || '（質問データなし）'}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </section>
+          )}
 
           {/* 相談内容（AI要約） */}
           <div className="mb-6">
@@ -495,21 +586,67 @@ ${consultationDetail.action_items || 'アクション項目分析中...'}
               </div>
             </details>
           </section>
+        </div>
 
-          {/* アクション列 */}
-          <div className="flex flex-col sm:flex-row gap-3 sm:justify-between">
-            <button
-              className="inline-flex items-center justify-center gap-3 rounded-lg bg-white px-5 py-2 shadow-sm hover:shadow border border-black/10 text-[rgba(39,39,39,0.9)]"
-              onClick={() => router.back()}
-              title="前のページに戻る"
-            >
-              <span className="text-[15px] font-bold">戻る</span>
-            </button>
+        {/* 顔カード */}
+        <div className="mx-auto max-w-[960px] px-4 py-6 sm:py-10">
+          <div className="relative w-full rounded-[32px] sm:rounded-[40px] text-white px-6 sm:px-10 pt-8 pb-14 shadow-[0_18px_40px_rgba(0,0,0,0.28)] bg-[radial-gradient(120%_120%_at_20%_0%,#3a3a3a,transparent_60%),linear-gradient(to_bottom,#2b2b2b,#1f1f1f)]">
+            {/* 角ピル（ダミー表示は維持） */}
+            {advisorBadges.topLeft && <CornerPill color="orange" className="absolute -top-6 -left-6">{advisorBadges.topLeft}</CornerPill>}
+            {advisorBadges.topRight && <CornerPill color="orange" className="absolute -top-6 -right-6">{advisorBadges.topRight}</CornerPill>}
+            {advisorBadges.bottomRight && <CornerPill color="green" className="absolute -bottom-6 -right-6">{advisorBadges.bottomRight}</CornerPill>}
 
-            <button className="px-4 py-2 rounded-lg bg-gray-100 border border-gray-200 text-gray-700" onClick={() => window.print()}>
-              この結果を印刷
-            </button>
+            <div className="flex flex-row items-center gap-6">
+              {/* 顔サムネ */}
+              <div className="h-[144px] w-[144px] rounded-[50%] overflow-hidden shrink-0 bg-white/10 ring-1 ring-white/10">
+                <Image
+                  src={advisorPhotoSrc}
+                  alt={advisor?.name ?? '担当者'}
+                  width={144}
+                  height={144}
+                  className="object-cover w-full h-full"
+                />
+              </div>
+              {/* 文字＋ボタン */}
+              <div className="flex-1 min-w-0">
+                <div className="text-xs text-white/70 mb-1">{advisor?.department ?? '所属不明'}</div>
+                <div className="text-[26px] sm:text-[30px] font-extrabold tracking-tight leading-tight whitespace-nowrap">
+                  {(advisor?.name ?? '担当者未設定') + ' さん'}
+                </div>
+                <div className="mt-4 flex flex-row items-center gap-3">
+                  <button
+                    onClick={handleTeamsSend}
+                    disabled={isTeamsSending}
+                    className="p-0 border-0 bg-transparent cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                    title={isTeamsSending ? '送信中...' : 'Teamsで連絡する'}
+                  >
+                    <Image src="/TeamsIcon.svg" alt="Teamsで連絡する" width={40} height={40} className="h-[40px] w-auto" />
+                  </button>
+                  <button
+                    className="px-4 py-2 text-xs rounded-md bg-white/10 border border-white/20"
+                    onClick={() => alert('準備中です（メール連絡）')}
+                  >
+                    メールで連絡する
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
+        </div>
+
+        {/* アクション列 */}
+        <div className="flex flex-col sm:flex-row gap-3 sm:justify-between">
+          <button
+            className="inline-flex items-center justify-center gap-3 rounded-lg bg-white px-5 py-2 shadow-sm hover:shadow border border-black/10 text-[rgba(39,39,39,0.9)]"
+            onClick={() => router.back()}
+            title="前のページに戻る"
+          >
+            <span className="text-[15px] font-bold">戻る</span>
+          </button>
+
+          <button className="px-4 py-2 rounded-lg bg-gray-100 border border-gray-200 text-gray-700" onClick={() => window.print()}>
+            この結果を印刷
+          </button>
         </div>
       </div>
     </div>

@@ -410,24 +410,18 @@ const issueQuestionPairs: IssueQuestionPair[] = useMemo(() => {
     setIsTeamsSending(true);
     try {
       const message = `
-【酒税法リスク判断支援システムからの相談】
+【Sherpathからの相談】
 
 ■ 相談タイトル
 ${consultationDetail.title || '相談内容'}
 
-■ 相談内容要約
-${consultationDetail.summary_title || consultationDetail.initial_content || question}
+■ 相談内容
+${consultationDetail.initial_content || '内容なし'}
 
-■ 主要論点
-${consultationDetail.key_issues || '分析中...'}
-
-■ 提案質問
+■ 質問
 ${consultationDetail.suggested_questions?.length
   ? consultationDetail.suggested_questions.map((q, i) => `${i + 1}. ${q}`).join('\n')
   : '質問生成中...'}
-
-■ 次のアクション
-${consultationDetail.action_items || 'アクション項目分析中...'}
 
 相談ID: ${consultationId}
       `.trim();
