@@ -168,6 +168,7 @@ export default function SummaryPage() {
   const api02 = process.env.NEXT_PUBLIC_API_ENDPOINT || 'https://aps-omu-02.azurewebsites.net';
   const api01 = 'https://aps-omu-01.azurewebsites.net';
 
+
 // 追加: 動的フィールドを型で表現
 type NumStr = '1' | '2' | '3';
 type PairKeys =
@@ -186,11 +187,13 @@ type IssueQuestionPair = { issue: string; question: string };
 
 const issueQuestionPairs: IssueQuestionPair[] = useMemo(() => {
   const d = (consultationDetail ?? {}) as DetailWithPairs;
+
   const pairs: IssueQuestionPair[] = [];
 
   const norm = (s: unknown) =>
     String(s ?? '')
       .replace(/\r/g, '')
+
       .replace(/^[\s　]+|[\s　]+$/g, '')   // 前後の全角/半角スペース
       .replace(/^(\d+[\.\)]\s*)/, '')      // 先頭の「1. 」などを削除
       .replace(/^論点[:：]\s*/, '')        // ラベル消し
@@ -205,12 +208,14 @@ const issueQuestionPairs: IssueQuestionPair[] = useMemo(() => {
     const question = norm(questionRaw);
     if (!issue && !question) return;
     const key = `${issue}__${question}`;
+
     if (seen.has(key)) return;
     seen.add(key);
     pairs.push({ issue, question });
   };
 
   const seen = new Set<string>();
+
 
   // 1) まとめ済み（最優先）
   const packed = (['1', '2', '3'] as const)
@@ -232,11 +237,13 @@ const issueQuestionPairs: IssueQuestionPair[] = useMemo(() => {
   (['1', '2', '3'] as const).forEach((n) => {
     const issue = d[`key_issue_${n}`];
     const question = d[`suggested_question_${n}`];
+
     pushUnique(issue, question, seen);
   });
 
   return pairs;
 }, [consultationDetail]);
+
 
 
   /* ========= カテゴリ名マッピング（従来通り維持） ========= */
