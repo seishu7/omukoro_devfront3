@@ -13,7 +13,6 @@ interface CategoryItem { category_id: string; category_name: string; }
 interface AlcoholType { type_id: string; type_name: string; }
 interface Regulation { prefLabel?: string; section_label?: string; score?: number; text: string; }
 interface Advisor { user_id: string; name: string; department: string; email?: string; }
-
 interface ConsultationDetail {
   consultation_id?: string;
   title?: string;
@@ -40,6 +39,16 @@ interface ConsultationDetail {
   issue_question_pair_1?: string; 
   issue_question_pair_2?: string;
   issue_question_pair_3?: string;
+  // ▼ 専門用語（バックエンドが返すフィールド）
+  term_name_1?: string;
+  term_name_2?: string;
+  term_name_3?: string;
+  term_definition_1?: string;
+  term_definition_2?: string;
+  term_definition_3?: string;
+  term_context_1?: string;
+  term_context_2?: string;
+  term_context_3?: string;
 }
 
 /* ========= UI badges（ダミーのまま保持） ========= */
@@ -125,6 +134,120 @@ function OmusubiMeter({ count = 0, color = '#959595' }: { count: number; color?:
   );
 }
 
+function OrangeSquareIcon({ className = '' }: { className?: string }) {
+  return (
+    <span
+      className={
+        [
+          "inline-flex h-[18px] w-[18px] items-center justify-center",
+          "rounded-[4px] border border-[#FF5A3C] bg-[#FFF1EC]",
+          className
+        ].join(' ')
+      }
+      aria-hidden
+    >
+    </span>
+  );
+}
+
+
+/** n(1|2|3)に対応する term_* をまとめて配列へ */
+function useTermsFor(detail: ConsultationDetail | null, n: '1' | '2' | '3') {
+  return useMemo(() => {
+    if (!detail) return [];
+    const names = (detail[`term_name_${n}` as const] ?? '')
+      .toString()
+      .split('|')
+      .map(s => s.trim())
+      .filter(Boolean);
+
+    const defs = (detail[`term_definition_${n}` as const] ?? '')
+      .toString()
+      .split('|')
+      .map(s => s.trim());
+
+    const ctxs = (detail[`term_context_${n}` as const] ?? '')
+      .toString()
+      .split('|')
+      .map(s => s.trim());
+
+    return names.map((name, i) => ({
+      name,
+      definition: defs[i],
+      context: ctxs[i],
+    }));
+  }, [detail, n]);
+}
+
+type TermChips = { name: string; definition?: string; context?: string };
+
+
+/** オレンジ用語チップ＋ホバー */
+function TermChips({ terms }: { terms: TermChips[] }) {
+  if (!terms || terms.length === 0) return null;
+
+  return (
+    <div className="flex flex-wrap gap-2 pt-1">
+      {terms.map((t, i) => (
+        <div key={`${t.name}-${i}`} className="relative group">
+          {/* チップ本体 */}
+          <span
+            className="
+              inline-flex items-center gap-1.5
+              rounded-md border border-[#FFD3C8] bg-[#FFF7F3]
+              px-2.5 py-1 text-[13px] font-medium text-[#FF5A3C]
+            "
+          >
+            <OrangeSquareIcon />
+            <span className="leading-none">{t.name}</span>
+          </span>
+
+          {/* ホバー浮き出し */}
+          <div
+            className="
+              pointer-events-none absolute left-0 top-[calc(100%+8px)]
+              z-30 hidden min-w-[280px] max-w-[440px]
+              rounded-xl border border-[#FFE2D9] bg-white p-3 shadow-lg
+              group-hover:block
+            "
+          >
+            {/* タイトル（用語名をオレンジ） */}
+            <div className="mb-2 text-[14px] font-bold text-[#FF5A3C]">
+              {t.name}
+            </div>
+
+            {/* 定義 */}
+            {t.definition && (
+              <div className="mb-1 text-[13px] leading-6 text-[#333] whitespace-pre-wrap">
+                {t.definition}
+              </div>
+            )}
+
+            {/* 文脈（グレー・補足） */}
+            {t.context && (
+              <div className="mt-1 text-[12px] leading-6 text-[#6B7280] whitespace-pre-wrap">
+                {t.context}
+              </div>
+            )}
+
+            {/* 三角のしっぽ */}
+            <div
+              className="
+                absolute -top-1 left-3 h-2 w-2 rotate-45
+                border-l border-t border-[#FFE2D9] bg-white
+              "
+              aria-hidden
+            />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+
+
+
 
 
 export default function SummaryPage() {
@@ -176,6 +299,12 @@ type PairKeys =
   | `key_issue_${NumStr}`
   | `suggested_question_${NumStr}`;
 
+  type TermChips = {
+    name: string;
+    definition?: string;
+    context?: string;
+  };
+  
 // consultationDetail にこれらのキーが来る想定を足す
 type DetailWithPairs = ConsultationDetail & Partial<Record<PairKeys, string>>;
 
@@ -454,7 +583,6 @@ ${consultationDetail.suggested_questions?.length
 
         {/* 本文カード */}
         <div className="mt-6 rounded-xl bg-white shadow p-6">
-          <h2 className="text-lg font-bold mb-2">打ち込んだ内容の要約</h2>
           <p className="text-sm text-gray-600 mb-4">相談ID: {params.id}</p>
 
           {/* タイトル */}
@@ -532,38 +660,59 @@ ${consultationDetail.suggested_questions?.length
           </div>
 
           {/* ===== 主要論点 × 対応質問（1:1） ===== */}
-          {issueQuestionPairs.length > 0 && (
-            <section className="mb-8">
-              <div className="rounded-xl border border-gray-200 bg-white">
-                <div className="border-b border-gray-200 px-4 py-3">
-                  <h3 className="text-base font-semibold text-gray-700">こういう論点がありそう</h3>
+          <div className="px-4 py-4 space-y-8">
+            {issueQuestionPairs.map((pair, idx) => {
+              // ここで idx → '1' | '2' | '3' に変換
+              const n = (['1','2','3'] as const)[idx] ?? '1';
+
+              // consultationDetail から直接取り出す
+              const names = (consultationDetail?.[`term_name_${n}` as const] ?? '')
+                .toString()
+                .split('|')
+                .map(s => s.trim())
+                .filter(Boolean);
+
+              const defs = (consultationDetail?.[`term_definition_${n}` as const] ?? '')
+                .toString()
+                .split('|')
+                .map(s => s.trim());
+
+              const ctxs = (consultationDetail?.[`term_context_${n}` as const] ?? '')
+                .toString()
+                .split('|')
+                .map(s => s.trim());
+
+              const terms = names.map((name, i) => ({
+                name,
+                definition: defs[i],
+                context: ctxs[i],
+              }));
+
+              return (
+                <div
+                  key={idx}
+                  className="space-y-3 border-b border-gray-100 pb-6 last:border-0 last:pb-0"
+                >
+                  {/* 論点：黒太字 */}
+                  <p className="text-[15px] leading-7 font-bold text-gray-900">
+                    {pair.issue || '（論点データなし）'}
+                  </p>
+
+                  {/* 用語チップ */}
+                  <TermChips terms={terms} />
+
+                  {/* 質問：先頭に Q. */}
+                  <div className="rounded-lg bg-gray-50 border border-gray-200 p-3">
+                    <p className="text-[15px] leading-7 text-gray-800 whitespace-pre-wrap">
+                      質問例  {pair.question || '（質問データなし）'}
+                    </p>
+                  </div>
                 </div>
+              );
+            })}
+          </div>
 
-                <div className="px-4 py-4 space-y-8">
-                  {issueQuestionPairs.map((pair, idx) => (
-                    <div
-                      key={idx}
-                      className="space-y-3 border-b border-gray-100 pb-6 last:border-0 last:pb-0"
-                    >
-                      {/* 論点：黒太字 */}
-                      <p className="text-[15px] leading-7 font-bold text-gray-900">
-                        {pair.issue || '（論点データなし）'}
-                      </p>
-
-                      {/* 質問：先頭に Q. */}
-                      <div className="rounded-lg bg-gray-50 border border-gray-200 p-3">
-                        <p className="text-[15px] leading-7 text-gray-800 whitespace-pre-wrap">
-                          Q. {pair.question || '（質問データなし）'}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </section>
-          )}
-
-
+          
 
           {/* 相談内容（AI要約）
           <div className="mb-6">
