@@ -30,6 +30,16 @@ interface ConsultationDetail {
   omusubi_score?: number;
   relevant_regulations?: Regulation[];
   recommended_advisor?: Advisor; // 追加
+  //主要論点と質問のブロックを追加
+  key_issue_1?: string;
+  key_issue_2?: string;
+  key_issue_3?: string;
+  suggested_question_1?: string;
+  suggested_question_2?: string;
+  suggested_question_3?: string;
+  issue_question_pair_1?: string; 
+  issue_question_pair_2?: string;
+  issue_question_pair_3?: string;
 }
 
 /* ========= UI badges（ダミーのまま保持） ========= */
@@ -130,8 +140,6 @@ export default function SummaryPage() {
   const [categoryMappings, setCategoryMappings] = useState<{ industry: Record<string, string>; alcohol: Record<string, string>; }>({ industry: {}, alcohol: {} });
   const [isTeamsSending, setIsTeamsSending] = useState(false);
   const [omusubiCount, setOmusubiCount] = useState<number>(0);
-
-  
   const omusubiColor = useMemo(() => {
     const map: Record<number, string> = {
       1: '#959595',
@@ -142,7 +150,6 @@ export default function SummaryPage() {
     };
     return map[omusubiCount] ?? '#959595';
   }, [omusubiCount]);
-
 
   // Badges（ダミー）
   const [advisorBadges, setAdvisorBadges] = useState<AdvisorBadges>({});
@@ -160,6 +167,60 @@ export default function SummaryPage() {
   // 既存の API ベース（02）は維持。アドバイザー取得のため 01 も併用（フォールバック含む）
   const api02 = process.env.NEXT_PUBLIC_API_ENDPOINT || 'https://aps-omu-02.azurewebsites.net';
   const api01 = 'https://aps-omu-01.azurewebsites.net';
+
+  type IssueQuestionPair = { issue: string; question: string };
+
+const issueQuestionPairs: IssueQuestionPair[] = useMemo(() => {
+  const d = consultationDetail ?? {};
+  const pairs: IssueQuestionPair[] = [];
+
+  const norm = (s: unknown) =>
+    String(s ?? '')
+      .replace(/\r/g, '')
+      .replace(/^[\s　]+|[\s　]+$/g, '')            // 前後全角/半角スペース
+      .replace(/^(\d+[\.\)]\s*)/, '')               // 先頭の「1. 」などを削除
+      .replace(/^論点[:：]\s*/,'')                  // ラベル消し
+      .replace(/^質問[:：]\s*/,'');
+
+  const pushUnique = (issueRaw: unknown, questionRaw: unknown, seen: Set<string>) => {
+    const issue = norm(issueRaw);
+    const question = norm(questionRaw);
+    if (!issue && !question) return;
+    const key = `${issue}__${question}`;           // 重複キー
+    if (seen.has(key)) return;
+    seen.add(key);
+    pairs.push({ issue, question });
+  };
+
+  const seen = new Set<string>();
+
+  // 1) まとめ済み（最優先）。1つでも見つかったら“これだけ”を返す
+  const packed: string[] = ['1','2','3']
+    .map(n => (d as any)?.[`issue_question_pair_${n}`])
+    .filter((x: any) => typeof x === 'string' && x.trim());
+
+  if (packed.length > 0) {
+    packed.forEach(raw => {
+      // 期待形式： 「論点：... \n 質問：...」 だが頑健に分解
+      const lines = String(raw).split(/\n+/);
+      const issueLine = lines.find(s => /論点[:：]/.test(s)) ?? '';
+      const questionLine = lines.find(s => /質問[:：]/.test(s)) ?? '';
+      pushUnique(issueLine, questionLine, seen);
+    });
+    return pairs;                                   // ← ここで終了（②は実行しない）
+  }
+
+  // 2) 個別フィールドを同番号で結合（①が無いときだけ）
+  ['1','2','3'].forEach(n => {
+    const issue = (d as any)?.[`key_issue_${n}`];
+    const question = (d as any)?.[`suggested_question_${n}`];
+    pushUnique(issue, question, seen);
+  });
+
+  return pairs;
+}, [consultationDetail]);
+
+  
 
   /* ========= カテゴリ名マッピング（従来通り維持） ========= */
   useEffect(() => {
@@ -388,6 +449,9 @@ ${consultationDetail.action_items || 'アクション項目分析中...'}
             </div>
           </div>
 
+          
+
+
           {/* 質問本文（折りたたみ）
           <section className="mb-10">
             <details className="group rounded-lg border border-gray-200 bg-white open:bg-gray-50">
@@ -449,7 +513,39 @@ ${consultationDetail.action_items || 'アクション項目分析中...'}
             </div>
           </div>
 
-          
+          {/* ===== 主要論点 × 対応質問（1:1） ===== */}
+          {issueQuestionPairs.length > 0 && (
+            <section className="mb-8">
+              <div className="rounded-xl border border-gray-200 bg-white">
+                <div className="border-b border-gray-200 px-4 py-3">
+                  <h3 className="text-base font-semibold text-gray-700">こういう論点がありそう</h3>
+                </div>
+
+                <div className="px-4 py-4 space-y-8">
+                  {issueQuestionPairs.map((pair, idx) => (
+                    <div
+                      key={idx}
+                      className="space-y-3 border-b border-gray-100 pb-6 last:border-0 last:pb-0"
+                    >
+                      {/* 論点：黒太字 */}
+                      <p className="text-[15px] leading-7 font-bold text-gray-900">
+                        {pair.issue || '（論点データなし）'}
+                      </p>
+
+                      {/* 質問：先頭に Q. */}
+                      <div className="rounded-lg bg-gray-50 border border-gray-200 p-3">
+                        <p className="text-[15px] leading-7 text-gray-800 whitespace-pre-wrap">
+                          Q. {pair.question || '（質問データなし）'}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </section>
+          )}
+
+
 
           {/* 相談内容（AI要約）
           <div className="mb-6">
@@ -462,7 +558,7 @@ ${consultationDetail.action_items || 'アクション項目分析中...'}
             </div>
           </div> */}
 
-          {/* 主要論点（APIで取得） */}
+          {/* 主要論点（APIで取得）
           <div className="mb-6">
             <div className="flex items-center gap-2 mb-1">
               <BubbleSvg className="h-4 w-4 text-gray-500" />
@@ -478,8 +574,9 @@ ${consultationDetail.action_items || 'アクション項目分析中...'}
               )}
             </div>
           </div>
+           */}
 
-          {/* 質問事項（AIが生成） */}
+          {/* 質問事項（AIが生成）
           <div className="mb-6">
             <div className="flex items-center gap-2 mb-1">
               <BubbleSvg className="h-4 w-4 text-gray-500" />
@@ -499,7 +596,8 @@ ${consultationDetail.action_items || 'アクション項目分析中...'}
                 <p className="text-gray-500">データを取得できていません。AIによる質問生成が完了していない可能性があります。</p>
               )}
             </div>
-          </div>
+          </div> 
+          */}
 
           {/* 関連根拠セクション（ダミー） */}
           <div className="mb-6">
