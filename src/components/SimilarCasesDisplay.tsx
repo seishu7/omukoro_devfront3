@@ -113,11 +113,6 @@ export const SimilarCasesDisplay: React.FC<SimilarCasesDisplayProps> = ({
 
   return (
     <div className={`similar-cases-display ${className}`}>
-             {/* ヘッダー情報 */}
-       <div className="flex items-center gap-2 mb-1">
-         <BubbleSvg className="h-4 w-4 text-gray-500" />
-         <h3 className="text-base font-semibold text-gray-700">類似相談案件</h3>
-       </div>
        
                {/* 候補件数とメッセージ + 類似相談案件のリスト全体を1つの枠で囲む */}
         <div className="rounded-lg border border-gray-200 p-4 leading-7 text-gray-800">
