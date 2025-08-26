@@ -134,7 +134,7 @@ useEffect(() => {
 
       {/* 入力カード（吹き出しはカード外・左下に表示） */}
       <div className="relative w-full">
-        <section className="bg-white rounded-2xl p-0 shadow-sm">
+      <section className="bg-white rounded-2xl overflow-hidden p-0 shadow-sm">
           <ConsultTextArea
             value={text}
             onChange={(v) => {
@@ -155,7 +155,7 @@ useEffect(() => {
         {showProgress && (
           <div>
             {/* 充足度（現在の位置：上側のまま） */}
-            <div className="absolute -top-18 z-10">
+            <div className="absolute -top-18 z-10 rounded-4xl overflow-hidden p-0 shadow-sm">
               <Bubble color={bubbleColor} tailSide="bottom" tailOffsetClass="left-8">
                 <div className="w-44 text-white">
                   <RealtimeProgressBar level={level} withLabel className="flex-col items-center gap-1" />
@@ -166,15 +166,22 @@ useEffect(() => {
             {/* 提案のみ：ConsultTextArea 左下（入力カード外） */}
             {suggestions.length > 0 && (
               <div
-                className="absolute left-6 z-10 max-w-[30vw]" //表示幅を調整
-                style={{ top: 'calc(100% + 8px)' }}
+              className="absolute z-10 max-w-[30vw] rounded-4xl overflow-hidden p-0 shadow-sm"
+              style={{ top: 'calc(100% + 8px)' }}
+            >
+              <Bubble
+                color={bubbleColor}
+                tailSide="top"
+                tailOffsetClass="left-8"
+                className="rounded-2xl shadow-md"                        // ← 角を丸く
               >
-                <Bubble color={bubbleColor} tailSide="top" tailOffsetClass="left-8">
-                  <div className="max-h-48 overflow-auto text-white break-words whitespace-pre-wrap">
-                    <SuggestionList suggestions={suggestions} />
-                  </div>
-                </Bubble>
-              </div>
+                <div className="max-h-48 overflow-auto text-white break-words whitespace-pre-wrap px-4 py-3">
+                  {/* ↑ 余白を追加 */}
+                  <SuggestionList suggestions={suggestions} />
+                </div>
+              </Bubble>
+            </div>
+            
             )}
           </div>
         )}

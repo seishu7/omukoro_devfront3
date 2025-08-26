@@ -49,6 +49,13 @@ interface ConsultationDetail {
   term_context_1?: string;
   term_context_2?: string;
   term_context_3?: string;
+  // ▼ 法令マッピング（ここを追加）
+  relevant_regulation_1?: string;
+  relevant_regulation_2?: string;
+  relevant_regulation_3?: string;
+  relevant_reg_text_1?: string;
+  relevant_reg_text_2?: string;
+  relevant_reg_text_3?: string;
 }
 
 /* ========= UI badges（ダミーのまま保持） ========= */
@@ -245,10 +252,88 @@ function TermChips({ terms }: { terms: TermChips[] }) {
   );
 }
 
+// まとめ表示用の型（簡易）
+type FlatReg = { label: string; text?: string };
 
+/** ConsultationDetail から relevant_regulation_n / relevant_reg_text_n を全部集約 */
+function collectAllRegs(detail: ConsultationDetail | null): FlatReg[] {
+  if (!detail) return [];
+  const out: FlatReg[] = [];
+  const seen = new Set<string>();
+  (['1', '2', '3'] as const).forEach(n => {
+    const labels = (detail[`relevant_regulation_${n}` as const] ?? '')
+      .toString()
+      .split('|')
+      .map(s => s.trim())
+      .filter(Boolean);
 
+    const texts = (detail[`relevant_reg_text_${n}` as const] ?? '')
+      .toString()
+      .split('|')
+      .map(s => s.trim());
 
+    labels.forEach((label, i) => {
+      const text = texts[i];
+      const key = `${label}__${text || ''}`;
+      if (seen.has(key)) return;
+      seen.add(key);
+      out.push({ label, text });
+    });
+  });
+  return out;
+}
 
+/** summary の1行表示を「第〇〇条」っぽく簡略化して返す */
+function extractArticleTitle(label?: string, text?: string): string {
+  const src = `${label ?? ''} ${text ?? ''}`;
+  // 「第〇〇条」を優先抽出（漢数字・全角数字・半角数字に対応）
+  const m = src.match(/第[一二三四五六七八九十百千0-9０-９]+条/);
+  if (m) return m[0];
+  if (label && label.trim()) return label.trim();
+  return '条文';
+}
+
+type RegItem = { label: string; text?: string };
+
+/** n(1|2|3)に対応する relevant_regulation_n / relevant_reg_text_n を配列にして返す */
+function getRegsFor(detail: ConsultationDetail | null, n: '1' | '2' | '3'): RegItem[] {
+  if (!detail) return [];
+  const labels = (detail[`relevant_regulation_${n}` as const] ?? '')
+    .toString()
+    .split('|')
+    .map(s => s.trim())
+    .filter(Boolean);
+
+  const texts = (detail[`relevant_reg_text_${n}` as const] ?? '')
+    .toString()
+    .split('|')
+    .map(s => s.trim());
+
+  return labels.map((label, i) => ({ label, text: texts[i] }));
+}
+
+/** 関連法令の小さなカードリスト（各論点の直下に出す） */
+function RegulationList({ regs }: { regs: RegItem[] }) {
+  if (!regs || regs.length === 0) return null;
+
+  return (
+    <div className="mt-2 space-y-2">
+      {regs.map((r, i) => (
+        <div
+          key={`${r.label}-${i}`}
+          className="rounded-lg border border-amber-200 bg-amber-50 p-3"
+        >
+          <div className="text-sm font-semibold text-amber-900">{r.label}</div>
+          {r.text && (
+            <div className="mt-1 text-[13px] leading-6 text-amber-900/80 whitespace-pre-wrap">
+              {r.text}
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
 
 export default function SummaryPage() {
   const router = useRouter();
@@ -262,6 +347,11 @@ export default function SummaryPage() {
   const [consultationDetail, setConsultationDetail] = useState<ConsultationDetail | null>(null);
   const [categoryMappings, setCategoryMappings] = useState<{ industry: Record<string, string>; alcohol: Record<string, string>; }>({ industry: {}, alcohol: {} });
   const [isTeamsSending, setIsTeamsSending] = useState(false);
+  const allRegs = useMemo<FlatReg[]>(
+    () => collectAllRegs(consultationDetail),
+    [consultationDetail]
+  );
+
   const [omusubiCount, setOmusubiCount] = useState<number>(0);
   const omusubiColor = useMemo(() => {
     const map: Record<number, string> = {
@@ -312,62 +402,68 @@ type DetailWithPairs = ConsultationDetail & Partial<Record<PairKeys, string>>;
 const isNonEmptyString = (v: unknown): v is string =>
   typeof v === 'string' && v.trim().length > 0;
 
+const hasLeadingNumber = (s: string) =>
+  /^[\s　]*((\d+[\.\)]|[①-⑳]|[一二三四五六七八九十]+[\.．、\)]?))/.test(s);
+
 type IssueQuestionPair = { issue: string; question: string };
 
 const issueQuestionPairs: IssueQuestionPair[] = useMemo(() => {
   const d = (consultationDetail ?? {}) as DetailWithPairs;
-
   const pairs: IssueQuestionPair[] = [];
 
-  const norm = (s: unknown) =>
+  // 付番は残しつつ、ラベルだけを落とす
+  const normIssue = (s: unknown): string =>
     String(s ?? '')
       .replace(/\r/g, '')
+      .replace(/^[\s　]+|[\s　]+$/g, '')
+      .replace(/^論点[:：]\s*/, '');   // ← 付番は削らない！
 
-      .replace(/^[\s　]+|[\s　]+$/g, '')   // 前後の全角/半角スペース
-      .replace(/^(\d+[\.\)]\s*)/, '')      // 先頭の「1. 」などを削除
-      .replace(/^論点[:：]\s*/, '')        // ラベル消し
+  const normQuestion = (s: unknown): string =>
+    String(s ?? '')
+      .replace(/\r/g, '')
+      .replace(/^[\s　]+|[\s　]+$/g, '')
       .replace(/^質問[:：]\s*/, '');
 
-  const pushUnique = (
-    issueRaw: unknown,
-    questionRaw: unknown,
-    seen: Set<string>
-  ) => {
-    const issue = norm(issueRaw);
-    const question = norm(questionRaw);
-    if (!issue && !question) return;
-    const key = `${issue}__${question}`;
+  const seen = new Set<string>();
 
+  // idx は 0,1,2 → '1'|'2'|'3' に対応
+  const pushUnique = (issueRaw: unknown, questionRaw: unknown, idx: number) => {
+    let issue = normIssue(issueRaw);
+    const question = normQuestion(questionRaw);
+    if (!issue && !question) return;
+
+    // packed 側（issue_question_pair_n）に付番が無い場合、key_issue_n 側から付番付きの文を採用
+    const n = (['1','2','3'] as const)[idx] ?? '1';
+    const keyIssue = d[`key_issue_${n}`];
+    if (issue && !hasLeadingNumber(issue) && isNonEmptyString(keyIssue)) {
+      const withNum = normIssue(keyIssue);
+      if (hasLeadingNumber(withNum)) issue = withNum;
+    }
+
+    const key = `${issue}__${question}`;
     if (seen.has(key)) return;
     seen.add(key);
     pairs.push({ issue, question });
   };
 
-  const seen = new Set<string>();
-
-
-  // 1) まとめ済み（最優先）
-  const packed = (['1', '2', '3'] as const)
-    .map((n) => d[`issue_question_pair_${n}`])
+  // 1) まとめ済み: issue_question_pair_n があれば最優先だが、付番が無い時は key_issue_n から補完
+  const packed = (['1','2','3'] as const)
+    .map(n => d[`issue_question_pair_${n}`])
     .filter(isNonEmptyString);
 
   if (packed.length > 0) {
-    packed.forEach((raw) => {
-      // 期待形式「論点：...\n質問：...」を頑健に抽出
+    packed.forEach((raw, idx) => {
       const lines = String(raw).split(/\n+/);
-      const issueLine = lines.find((s) => /論点[:：]/.test(s)) ?? '';
-      const questionLine = lines.find((s) => /質問[:：]/.test(s)) ?? '';
-      pushUnique(issueLine, questionLine, seen);
+      const issueLine = lines.find(s => /論点[:：]/.test(s)) ?? '';
+      const questionLine = lines.find(s => /質問[:：]/.test(s)) ?? '';
+      pushUnique(issueLine, questionLine, idx);
     });
-    return pairs; // ここで終了（個別フィールドへは進まない）
+    return pairs;
   }
 
-  // 2) 個別フィールドを同番号で結合（①が無いときだけ）
-  (['1', '2', '3'] as const).forEach((n) => {
-    const issue = d[`key_issue_${n}`];
-    const question = d[`suggested_question_${n}`];
-
-    pushUnique(issue, question, seen);
+  // 2) 個別フィールドの結合（①が無い時だけ）
+  (['1','2','3'] as const).forEach((n, idx) => {
+    pushUnique(d[`key_issue_${n}`], d[`suggested_question_${n}`], idx);
   });
 
   return pairs;
@@ -590,29 +686,13 @@ ${consultationDetail.suggested_questions?.length
             <div className="flex items-center gap-2 mb-1">
               <h3 className="text-base font-semibold text-gray-700">タイトル</h3>
             </div>
-            <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 text-[15px] text-gray-800 font-medium">
+            <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 text-[20px] text-gray-800 font-medium">
               {consultationDetail?.title || '相談内容'}
             </div>
           </div>
 
-          
-
-
-          {/* 質問本文（折りたたみ）
-          <section className="mb-10">
-            <details className="group rounded-lg border border-gray-200 bg-white open:bg-gray-50">
-              <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3">
-                <span className="text-base font-semibold text-gray-700">元の質問本文</span>
-                <span className="ml-3 text-gray-400 transition-transform group-open:rotate-180">▼</span>
-              </summary>
-              <div className="px-4 pb-4 pt-1 text-[15px] leading-7 text-gray-800 whitespace-pre-wrap">
-                {consultationDetail?.initial_content || question}
-              </div>
-            </details>
-          </section>*/}
-
           {/* 質問本文（全文表示） */}
-          <section className="mb-10">
+          <section className="mb-4">
             <h3 className="text-base font-semibold text-gray-700 mb-2">質問本文</h3>
             <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 text-[15px] leading-7 text-gray-800 whitespace-pre-wrap">
               {consultationDetail?.initial_content || question}
@@ -621,24 +701,15 @@ ${consultationDetail.suggested_questions?.length
 
 
           {/* 充足度 */}
-          <section className="mt-2 mb-10">
+          <section className="mt-2 mb-4">
           <div className="flex items-center gap-3">
           <span className="text-sm text-gray-600">相談内容の充足度</span>
           <OmusubiMeter count={omusubiCount} color={omusubiColor} />
           </div>
-
-           {/* 相談内容要約
-            <h3 className="mt-5 mb-2 text-[15px] font-semibold text-gray-700">相談内容の要約</h3>
-            <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 text-[15px] leading-7 text-gray-800 whitespace-pre-wrap">
-              {consultationDetail?.content
-                || consultationDetail?.summary_title
-                || consultationDetail?.initial_content
-                || question}
-            </div> */}
           </section>
 
           {/* 業種・酒類カテゴリ */}
-          <div className="mb-6">
+          <div className="mb-10">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="bg-blue-50 rounded-lg border border-blue-200 p-4">
                 <h4 className="font-medium text-blue-900 mb-2 text-sm">業種カテゴリ</h4>
@@ -660,6 +731,7 @@ ${consultationDetail.suggested_questions?.length
           </div>
 
           {/* ===== 主要論点 × 対応質問（1:1） ===== */}
+          <h3 className="text-base font-semibold text-gray-700 mb-3">主要論点と質問例</h3>
           <div className="px-4 py-4 space-y-8">
             {issueQuestionPairs.map((pair, idx) => {
               // ここで idx → '1' | '2' | '3' に変換
@@ -701,10 +773,12 @@ ${consultationDetail.suggested_questions?.length
                   {/* 用語チップ */}
                   <TermChips terms={terms} />
 
+                  
+
                   {/* 質問：先頭に Q. */}
                   <div className="rounded-lg bg-gray-50 border border-gray-200 p-3">
                     <p className="text-[15px] leading-7 text-gray-800 whitespace-pre-wrap">
-                      質問例  {pair.question || '（質問データなし）'}
+                      Q.  {pair.question || '（質問データなし）'}
                     </p>
                   </div>
                 </div>
@@ -712,69 +786,8 @@ ${consultationDetail.suggested_questions?.length
             })}
           </div>
 
-          
-
-          {/* 相談内容（AI要約）
-          <div className="mb-6">
-            <div className="flex items-center gap-2 mb-1">
-              <BubbleSvg className="h-4 w-4 text-gray-500" />
-              <h3 className="text-sm text-gray-500">相談内容（AI要約）</h3>
-            </div>
-            <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 whitespace-pre-wrap text-[15px] text-gray-800">
-              {question}
-            </div>
-          </div> */}
-
-          {/* 主要論点（APIで取得）
-          <div className="mb-6">
-            <div className="flex items-center gap-2 mb-1">
-              <BubbleSvg className="h-4 w-4 text-gray-500" />
-              <h3 className="text-base font-semibold text-gray-700">主要論点</h3>
-            </div>
-            <div className="rounded-lg border border-gray-200 p-4 leading-7 text-gray-800">
-              {consultationDetail?.key_issues ? (
-                <div className="whitespace-pre-wrap text-sm">
-                  {consultationDetail.key_issues}
-                </div>
-              ) : (
-                <p className="text-gray-500">主要論点を取得中です…</p>
-              )}
-            </div>
-          </div>
-           */}
-
-          {/* 質問事項（AIが生成）
-          <div className="mb-6">
-            <div className="flex items-center gap-2 mb-1">
-              <BubbleSvg className="h-4 w-4 text-gray-500" />
-              <h3 className="text-sm text-gray-500">質問事項</h3>
-            </div>
-            <div className="rounded-lg border border-gray-200 p-4 leading-7 text-gray-800">
-              {consultationDetail?.suggested_questions?.length ? (
-                <ul className="space-y-2">
-                  {consultationDetail.suggested_questions.map((q, i) => (
-                    <li key={i} className="flex items-start gap-2">
-                      <span className="text-blue-600 font-medium">{i + 1}.</span>
-                      <span>{q}</span>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="text-gray-500">データを取得できていません。AIによる質問生成が完了していない可能性があります。</p>
-              )}
-            </div>
-          </div> 
-          */}
-
-          {/* 関連根拠セクション（ダミー） */}
-          <div className="mb-6">
-            <h3 className="text-sm text-gray-500 mb-2">関連根拠</h3>
-            <div className="rounded-lg border border-gray-200 p-4 text-sm text-gray-700">
-              根拠リンクや引用をここに表示します。
-            </div>
-          </div>
-
           {/* 類似相談案件 */}
+          <h3 className="text-base font-semibold text-gray-700 mt-10 mb-4">類似相談案件</h3>
           <SimilarCasesDisplay
             similarCases={similarCasesData?.similar_cases || []}
             isLoading={isLoadingSimilarCases}
@@ -786,9 +799,31 @@ ${consultationDetail.suggested_questions?.length
           />
 
           
+          {/* ▼ 類似相談案件の下：関連する法令（まとめ） */}
+          <h3 className="text-base font-semibold text-gray-700 mt-10 mb-4">関連する法令</h3>
+          {allRegs.map((r: FlatReg, idx: number) => (
+          <details
+            key={`${r.label}-${idx}`}
+            className="group rounded-md border border-gray-200 bg-gray-50 open:bg-gray-50">
+            <summary className="flex cursor-pointer list-none items-center justify-between px-3 py-2 text-sm text-gray-800">
+              {/* ← 加工せず API のラベルをそのまま */}
+              <span className="font-medium">{r.label || '条文'}</span>
+              <span className="ml-3 text-gray-400 transition-transform group-open:rotate-180">
+                ▼
+              </span>
+            </summary>
+
+            {r.text && (
+              <div className="px-3 pb-3 pt-1 text-[13px] leading-6 text-gray-700 whitespace-pre-wrap">
+                {r.text}
+              </div>
+            )}
+          </details>
+        ))}
 
            {/* 顔カード */}
-        <div className="mx-auto max-w-[960px] px-4 py-6 sm:py-10">
+       <h3 className="text-base font-semibold text-gray-700 mt-10 mb-4">アドバイザー</h3>
+        <div className="mx-auto max-w-[960px] px-4 py-4 sm:py-6">
           <div className="relative w-full rounded-[32px] sm:rounded-[40px] text-white px-6 sm:px-10 pt-8 pb-14 shadow-[0_18px_40px_rgba(0,0,0,0.28)] bg-[radial-gradient(120%_120%_at_20%_0%,#3a3a3a,transparent_60%),linear-gradient(to_bottom,#2b2b2b,#1f1f1f)]">
             {/* 角ピル（ダミー表示は維持） */}
             {advisorBadges.topLeft && <CornerPill color="orange" className="absolute -top-6 -left-6">{advisorBadges.topLeft}</CornerPill>}
@@ -841,12 +876,12 @@ ${consultationDetail.suggested_questions?.length
               title="もう一度質問する（直前の内容は自動で復元されます）"
             >
               {/* おにぎりロゴ（SVG） */}
-              <OnigiriSvg className="h-[18px] w-[22px] text-[#2b2b2b]" />
+              
               <OmusubiSvg className="h-[18px] w-[22px] text-[#2b2b2b]" />
-              <span className="text-[15px] font-bold">再度質問する</span>
+              <span className="text-[15px] font-bold">戻る</span>
             </button>
 
-            <button className="px-4 py-2 rounded-lg bg-gray-100 border border-gray-200 text-gray-700" onClick={() => window.print()}>
+            <button className="px-4 py-2 rounded-lg border border-gray-200" onClick={() => window.print()}>
               この結果を印刷
             </button>
           </div>
