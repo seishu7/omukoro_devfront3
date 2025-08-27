@@ -141,19 +141,16 @@ function OmusubiMeter({ count = 0, color = '#959595' }: { count: number; color?:
   );
 }
 
-function OrangeSquareIcon({ className = '' }: { className?: string }) {
+// 置き換え: オレンジ四角 → public/open_in_new.svg
+function OpenInNewIcon({ className = '' }: { className?: string }) {
   return (
-    <span
-      className={
-        [
-          "inline-flex h-[18px] w-[18px] items-center justify-center",
-          "rounded-[4px] border border-[#FF5A3C] bg-[#FFF1EC]",
-          className
-        ].join(' ')
-      }
-      aria-hidden
-    >
-    </span>
+    <Image
+      src="/open_in_new.svg"
+      alt="open"
+      width={14}
+      height={14}
+      className={['inline-block', className].join(' ')}
+    />
   );
 }
 
@@ -186,6 +183,68 @@ function useTermsFor(detail: ConsultationDetail | null, n: '1' | '2' | '3') {
   }, [detail, n]);
 }
 
+/** 正規表現のエスケープ */
+function escapeRegExp(s: string) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/** 主要論点テキスト中の用語を強調表示（オレンジ＋アイコン） */
+function HighlightedIssue({
+  text,
+  terms,
+}: {
+  text: string;
+  terms: string[]; // 用語名のみ（チップで使ってる names と同じ）
+}) {
+  if (!text || !terms || terms.length === 0) return <>{text}</>;
+
+  // ユニーク化 & 長い順（部分一致の誤マッチを減らす）
+  const uniq = Array.from(new Set(terms.filter(Boolean)));
+  if (uniq.length === 0) return <>{text}</>;
+
+  const pattern = uniq
+    .sort((a, b) => b.length - a.length)
+    .map(escapeRegExp)
+    .join('|');
+
+  // g/i で大小無視の全文検索
+  const re = new RegExp(`(${pattern})`, 'gi');
+
+  const parts: React.ReactNode[] = [];
+  let lastIndex = 0;
+  let m: RegExpExecArray | null;
+
+  while ((m = re.exec(text)) !== null) {
+    const start = m.index;
+    const end = start + m[0].length;
+    if (start > lastIndex) {
+      parts.push(text.slice(lastIndex, start));
+    }
+
+    const matched = text.slice(start, end);
+
+    // オレンジ強調 + 小アイコン
+    parts.push(
+      <span
+        key={`${start}-${end}-${matched}`}
+        className="inline-flex items-center gap-1 text-[#FF5A3C] font-bold"
+      >
+        <OpenInNewIcon />
+        <span>{matched}</span>
+      </span>
+    );
+
+    lastIndex = end;
+  }
+
+  if (lastIndex < text.length) {
+    parts.push(text.slice(lastIndex));
+  }
+
+  return <>{parts}</>;
+}
+
+
 type TermChips = { name: string; definition?: string; context?: string };
 
 
@@ -205,7 +264,7 @@ function TermChips({ terms }: { terms: TermChips[] }) {
               px-2.5 py-1 text-[13px] font-medium text-[#FF5A3C]
             "
           >
-            <OrangeSquareIcon />
+            <OpenInNewIcon />
             <span className="leading-none">{t.name}</span>
           </span>
 
@@ -765,15 +824,13 @@ ${consultationDetail.suggested_questions?.length
                   key={idx}
                   className="space-y-3 border-b border-gray-100 pb-6 last:border-0 last:pb-0"
                 >
-                  {/* 論点：黒太字 */}
-                  <p className="text-[15px] leading-7 font-bold text-gray-900">
-                    {pair.issue || '（論点データなし）'}
+                  {/* 論点：黒太字（用語は本文内で強調） */}
+                  <p className="text-[15px] leading-9 font-bold text-gray-800">
+                    <HighlightedIssue text={pair.issue || '（論点データなし）'} terms={names} />
                   </p>
-
+                  
                   {/* 用語チップ */}
                   <TermChips terms={terms} />
-
-                  
 
                   {/* 質問：先頭に Q. */}
                   <div className="rounded-lg bg-gray-50 border border-gray-200 p-3">
