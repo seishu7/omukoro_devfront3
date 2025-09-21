@@ -13,7 +13,7 @@ export interface RAGChunk {
   score: number;
   search_type: 'vector' | 'graph' | 'keyword';
   node_id?: string | null;
-  edge_info?: any;
+  edge_info?: Record<string, unknown> | null;
 }
 
 export interface TraditionalRAGChunk {

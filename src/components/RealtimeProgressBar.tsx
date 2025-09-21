@@ -12,7 +12,7 @@ interface RealtimeProgressBarProps {
   labels?: Partial<Record<CompletenessLevel, string>>;
 }
 
-const colorByLevel: Record<CompletenessLevel, string> = {
+const _colorByLevel: Record<CompletenessLevel, string> = {
   1: '#959595', // 不足・グレー
   2: '#959595', // 不足・グレー
   3: '#C6AA0E', // 中程度・イエロー

@@ -76,7 +76,7 @@ function CornerPill({ children, color = 'orange', className = '' }: { children: 
 }
 
 /* ===== SVGs（このファイル内だけで完結） ===== */
-function OnigiriSvg({ className }: { className?: string }) {
+function _OnigiriSvg({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 22" className={className} fill="currentColor" aria-hidden>
       <path d="M7.45 2.45C10 -0.82 14.99 -0.82 17.55 2.45c.24.31.52.79 1.1 1.77l4.34 7.36c.58.98.86 1.46 1.02 1.84 1.62 3.8-.9 8.06-5.04 8.56-.39.05-.96.05-2.1.05H8.16c-1.14 0-1.71 0-2.11-.05-4.16-.5-6.66-4.76-5.04-8.56.16-.38.44-.86 1.02-1.84L6.37 4.22c.58-.98.86-1.46 1.08-1.77Z" />
@@ -94,7 +94,7 @@ function OmusubiSvg({ className }: { className?: string }) {
   );
 }
 
-function BubbleSvg({ className }: { className?: string }) {
+function _BubbleSvg({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" className={className} aria-hidden>
       <path d="M5 6a3 3 0 0 1 3-3h8a3 3 0 0 1 3 3v7a3 3 0 0 1-3 3H11l-3.8 3.1c-.7.57-1.7.06-1.7-.83V16A3 3 0 0 1 5 13V6Z" fill="currentColor" />
@@ -156,9 +156,9 @@ function OpenInNewIcon({ className = '' }: { className?: string }) {
 
 
 /** n(1|2|3)に対応する term_* をまとめて配列へ */
-function useTermsFor(detail: ConsultationDetail | null, n: '1' | '2' | '3') {
-  return useMemo(() => {
-    if (!detail) return [];
+function _useTermsFor(detail: ConsultationDetail | null, n: '1' | '2' | '3') {
+  // useMemoを削除してシンプルな関数に変更
+  if (!detail) return [];
     const names = (detail[`term_name_${n}` as const] ?? '')
       .toString()
       .split('|')
@@ -175,12 +175,11 @@ function useTermsFor(detail: ConsultationDetail | null, n: '1' | '2' | '3') {
       .split('|')
       .map(s => s.trim());
 
-    return names.map((name, i) => ({
-      name,
-      definition: defs[i],
-      context: ctxs[i],
-    }));
-  }, [detail, n]);
+  return names.map((name, i) => ({
+    name,
+    definition: defs[i],
+    context: ctxs[i],
+  }));
 }
 
 /** 正規表現のエスケープ */
@@ -343,7 +342,7 @@ function collectAllRegs(detail: ConsultationDetail | null): FlatReg[] {
 }
 
 /** summary の1行表示を「第〇〇条」っぽく簡略化して返す */
-function extractArticleTitle(label?: string, text?: string): string {
+function _extractArticleTitle(label?: string, text?: string): string {
   const src = `${label ?? ''} ${text ?? ''}`;
   // 「第〇〇条」を優先抽出（漢数字・全角数字・半角数字に対応）
   const m = src.match(/第[一二三四五六七八九十百千0-9０-９]+条/);
@@ -355,7 +354,7 @@ function extractArticleTitle(label?: string, text?: string): string {
 type RegItem = { label: string; text?: string };
 
 /** n(1|2|3)に対応する relevant_regulation_n / relevant_reg_text_n を配列にして返す */
-function getRegsFor(detail: ConsultationDetail | null, n: '1' | '2' | '3'): RegItem[] {
+function _getRegsFor(detail: ConsultationDetail | null, n: '1' | '2' | '3'): RegItem[] {
   if (!detail) return [];
   const labels = (detail[`relevant_regulation_${n}` as const] ?? '')
     .toString()
@@ -372,7 +371,7 @@ function getRegsFor(detail: ConsultationDetail | null, n: '1' | '2' | '3'): RegI
 }
 
 /** 関連法令の小さなカードリスト（各論点の直下に出す） */
-function RegulationList({ regs }: { regs: RegItem[] }) {
+function _RegulationList({ regs }: { regs: RegItem[] }) {
   if (!regs || regs.length === 0) return null;
 
   return (

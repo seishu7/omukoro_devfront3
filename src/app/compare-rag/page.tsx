@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import AppHeader from '@/components/AppHeader';
 import { RAGComparisonResult } from '@/components/RAGComparisonResult';
@@ -9,10 +9,10 @@ import { useRAGComparison } from '@/hooks/useRAGComparison';
 import LoadingModal from '@/components/LoadingModal';
 import { ArrowLeft, RefreshCw } from 'lucide-react';
 
-export default function CompareRAGPage() {
+function CompareRAGContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { comparisonResult, loading, error, compareRAG, clearComparison } = useRAGComparison();
+  const { comparisonResult, loading, error, compareRAG } = useRAGComparison();
   const [query, setQuery] = useState('');
 
   useEffect(() => {
@@ -120,5 +120,20 @@ export default function CompareRAGPage() {
       {/* ローディングモーダル */}
       <LoadingModal open={loading} label="RAG比較中…" />
     </div>
+  );
+}
+
+export default function CompareRAGPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-dot-pattern flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-white mb-4"></div>
+          <p className="text-white">読み込み中...</p>
+        </div>
+      </div>
+    }>
+      <CompareRAGContent />
+    </Suspense>
   );
 }

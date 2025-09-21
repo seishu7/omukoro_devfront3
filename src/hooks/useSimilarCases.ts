@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { similarCasesApi, SimilarCasesResponse, SimilarCasesRequest } from '../services/similarCasesApi';
 
 // フックの戻り値の型定義

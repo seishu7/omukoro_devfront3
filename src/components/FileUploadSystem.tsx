@@ -66,7 +66,7 @@ const FileUploadSystem: React.FC<FileUploadSystemProps> = ({ className = '' }) =
     }
 
     return null;
-  }, [files]);
+  }, [files, ALLOWED_TYPES, MAX_FILE_SIZE]);
 
   const addFiles = useCallback((newFiles: FileList) => {
     const fileArray = Array.from(newFiles);

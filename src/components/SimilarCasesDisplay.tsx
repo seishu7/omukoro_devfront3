@@ -2,7 +2,7 @@ import React from 'react';
 import { SimilarCase } from '../services/similarCasesApi';
 
 // BubbleSvgコンポーネント（既存のpage.tsxからコピー）
-function BubbleSvg({ className }: { className?: string }) {
+function _BubbleSvg({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" className={className} aria-hidden>
       {/* 吹き出し：角丸矩形 + 下尾 */}
@@ -43,7 +43,7 @@ export const SimilarCasesDisplay: React.FC<SimilarCasesDisplayProps> = ({
   isLoading,
   error,
   totalCandidates,
-  message,
+  message: _message,
   className = '',
   categoryMappings,
 }) => {

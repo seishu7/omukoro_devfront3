@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { RAGComparisonResponse, RAGChunk, TraditionalRAGChunk } from '@/types/rag-comparison';
+import { RAGComparisonResponse, RAGChunk } from '@/types/rag-comparison';
 import { ChevronDown, ChevronRight, Clock, FileText, Search, Network } from 'lucide-react';
 
 interface RAGComparisonResultProps {
@@ -164,7 +164,7 @@ export const RAGComparisonResult: React.FC<RAGComparisonResultProps> = ({ result
                       chunk_id: chunk.chunk_id,
                     },
                     score: chunk.score,
-                    search_type: chunk.search_type, // バックエンドから取得
+                    search_type: chunk.search_type as 'vector' | 'graph' | 'keyword', // バックエンドから取得
                     node_id: null,
                     edge_info: null,
                   }}
